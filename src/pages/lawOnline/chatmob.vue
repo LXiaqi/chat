@@ -16,7 +16,7 @@
             <div class="chat_details_info_box">
                 <img class="chat_active_img"  src="./../../assets/img/waiters/avatar_group.png" alt="">
                 <span class="chat_details_sentence" v-show="!item.img"> {{item.Message}}</span>
-                 <img class="chatimg_s" :src="item.Message" alt="" v-if="item.img">
+                 <img class="chatimg_s" :src="item.Message" alt="" v-if="item.img" @click="amplification(item.Message)">
             </div>
            
         </div>
@@ -25,7 +25,7 @@
                <span class="chat_details_sentence_s" v-show="!item.img">
                     {{item.Message}}
                 </span>
-                <img class="chatimg_s" :src="item.Message" alt="" v-if="item.img">
+                <img class="chatimg_s" :src="item.Message" alt="" v-if="item.img" @click="amplification(item.Message)">
                 <img class="chatimg_" src="./../../assets/img/waiters/avatar_group.png" alt="">
             </div>
         </div>
@@ -50,6 +50,7 @@
 
 <script>
 import { GetUserData,distribution, } from "@/api/waiters";
+import { ImagePreview } from 'vant';
 export default {
   data() {
     return {
@@ -141,6 +142,7 @@ export default {
         
       })
     },
+    //发送
     send() {
       console.log('发送id：'+this.send_id+',接收id：'+this.receive_id);
        this.demoChatHubProxy.invoke('sendPrivateMsg',this.send_id,this.receive_id,this.value,1,false); 
@@ -148,6 +150,7 @@ export default {
      
      
     },
+    //底栏状态切换
     add_img() {
       if(this.bottom_type == false) {
           this.bottom_type = true;
@@ -156,8 +159,7 @@ export default {
 
       }
     },
-
-   
+   // 图片上传
     handleAvatarSuccess(res,file) {
       this.file ='https://files.365lawhelp.com/'+res.data;
       this.sendBtnType = true;
@@ -165,7 +167,11 @@ export default {
         this.bottom_type = false;
         this.sendBtnType = false;
     },
-  }
+    // 图片放大
+    amplification(img) {
+       ImagePreview([img]);
+    }
+  },
 };
 </script>
 
