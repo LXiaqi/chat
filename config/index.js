@@ -23,7 +23,6 @@ module.exports = {
       '/': {
         target: 'http://192.168.6.214:8002',
         changeOrigin: true,
-       
       }
     },
     
