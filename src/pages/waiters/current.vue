@@ -28,7 +28,7 @@
             </el-header>
             <!-- 聊天内容 -->
             <el-main>
-                <div class="chat_details_content">
+                <div class="chat_details_content" ref="content_view">
                     <span class="tips" @click="more()" v-loading="more_type" v-show="more_show">加载更多</span>
                     <div v-for="item in conversationList" :key="item.Id" :class="item.img == false ? 'chat_my_left' : 'chat_my_left2'" >
                         <div v-show="item.Types == 1">
@@ -104,10 +104,14 @@
 </template>
 
 <script>
-import { chatList,conversation,getCustomerInfo } from "@/api/waiters";
+import { chatList,conversation,getCustomerInfo,GetUserData} from "@/api/waiters";
 export default {
  data() {
      return {
+         types_user:'0',
+         searchid:'',
+         id:'',//发送方id
+         name:'',
          chat_list:[], // 当前会话列表
          search_user:'',// 搜索内容
          chatType:0, // 聊天列表的状态 0是当前会话 1 是历史会话， 这里固定为0
@@ -149,14 +153,14 @@ export default {
                     let data = {
                         CustomerName:userName,
                         CustomerId:id,
-                        UserName:_this.$route.query.name,
-                        UserId:_this.$route.query.id,
+                        UserName:_this.name,
+                        UserId:_this.id,
                         Time:new Date( +new Date() + 8 * 3600 * 1000 ).toJSON().substr(0,19).replace("T"," "),
                         Message:_this.msg
                     }
                     _this.chat_list.unshift(data);
                     _this.userInformationId = data.CustomerId;
-                     _this.demoChatHubProxy.invoke('sendPrivateMsg',_this.$route.query.id,_this.userInformationId, _this.msg,0,false); 
+                     _this.demoChatHubProxy.invoke('sendPrivateMsg',_this.id,_this.userInformationId, _this.msg,0,false); 
              }
           
 
@@ -173,6 +177,8 @@ export default {
                img:img
            } 
            _this.conversationList.push(datas);
+           _this.$refs.content_view.scrollTop = _this.$refs.content_view.scrollHeight
+           
         });
              //显示发送的私聊消息
         _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,img){
@@ -187,6 +193,7 @@ export default {
                img:img
            } 
            _this.conversationList.push(datas);
+           _this.$refs.content_view.scrollTop = _this.$refs.content_view.scrollHeight
        },); 
       connection
         .start()
@@ -195,7 +202,7 @@ export default {
             message: '连接成功',
             type: 'success'
           });
-        _this.demoChatHubProxy.invoke("addOnlineUser", _this.$route.query.id,_this.$route.query.name,0 );
+        _this.demoChatHubProxy.invoke("addOnlineUser", _this.id,_this.name,0 );
         })
         .fail(function () {
           _this.$message.error('连接失败');
@@ -204,20 +211,27 @@ export default {
   mounted() {
    this.info();
   },
-  
+
   methods: {
    // 左侧聊天列表的渲染
    info() {
-       console.log( this.$route.query.id);
        chatList(this).then(res => {
             this.chat_list = res.data.data;
             this.customer_name =  this.chat_list[0].CustomerName;
             this.user_id =  this.chat_list[0].UserId;
             this.userInformationId  =  this.chat_list[0].CustomerId;
-            
             this.userinfo();
-       });    
-   },
+       }); 
+       GetUserData(this).then(res => {
+             this.id = res.data.sendId
+             this.name = res.data.sendName;
+       });
+        if(this.$cookies.get('FBWTokenId') == '' || this.$cookies.get('FBWTokenId') == null) {
+           this.$router.replace('/login');
+        }
+       },
+
+   
    // 聊天详情的渲染
    userinfo() {
         conversation(this).then(res_data => {
@@ -228,7 +242,7 @@ export default {
             }
             this.total = Math.floor(res_data.data.recordsTotal/10);
             for(let i = 0; i < res_data.data.data.length; i++){
-                if(res_data.data.data[i].Message.indexOf('http://files.365lawhelp.com') == -1) {
+                if(res_data.data.data[i].Message.indexOf('https://files.365lawhelp.com') == -1) {
                     res_data.data.data[i].img = false
                 }else {
                      res_data.data.data[i].img = true
@@ -255,7 +269,7 @@ export default {
             conversation(this).then(res => {
             for(let i = 0; i < res.data.data.length; i++){
                 this.conversationList.unshift(res.data.data[i]);
-                 if(res.data.data[i].Message.indexOf('http://files.365lawhelp.com') == -1) {
+                 if(res.data.data[i].Message.indexOf('https://files.365lawhelp.com') == -1) {
                     res.data.data[i].img = false
                 }else {
                      res.data.data[i].img = true
@@ -272,8 +286,9 @@ export default {
    },
    // 消息发送
    sendOut() {
-    this.demoChatHubProxy.invoke('sendPrivateMsg',this.$route.query.id,this.userInformationId,this.chat_sendout,0,false); 
+    this.demoChatHubProxy.invoke('sendPrivateMsg',this.id,this.userInformationId,this.chat_sendout,0,false); 
     this.chat_sendout = '';
+    
    },
    // 个人信息的展开
    user_information() {
@@ -284,9 +299,9 @@ export default {
    },
    // 选择图片
    handleAvatarSuccess(res,file) {
-      this.file ='http://files.365lawhelp.com/'+res.data;
+      this.file ='https://files.365lawhelp.com/'+res.data;
       this.sendBtnType = true;
-    this.demoChatHubProxy.invoke('sendPrivateMsg',this.$route.query.id,this.userInformationId,this.file,0,true); 
+    this.demoChatHubProxy.invoke('sendPrivateMsg',this.id,this.userInformationId,this.file,0,true); 
 
     },
   }
@@ -425,18 +440,20 @@ export default {
     padding: 10px;
     border-radius: 6px;
     width: max-content;
-    margin: 20px 0;
+    margin: 0 0 36px 0;
+    max-width: 1000px;
+    word-wrap: break-word;
 }
 .chat_my_right {
     text-align: end;
     margin-inline-end: 80px;
-    height: 100px;;
+    
 }
 .chat_my_left {
-    height: 130px;
+  
 }
 .chat_my_left2 {
-    height: 320px;
+   
 }
 .chat_my_right_msgbox {
     margin-top: 18px;
@@ -446,7 +463,10 @@ export default {
     color: #fff;
     padding: 10px;
     border-radius: 6px;
-    margin: 20px 0;
+    margin: 0 0 36px 0;
+    max-width: 1000px;
+    word-wrap: break-word;
+    display: inline-block;
 }
 /* 聊天文本域部分 */
 .chat_sendout_box {

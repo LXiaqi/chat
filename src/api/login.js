@@ -12,21 +12,3 @@ export async function login(that) {
        return res;
     }
 }
-// 用户注册
-export async function userRegister(that) {
-    let data = {
-        UserName:that.username,
-        Pwd:that.password,
-        Sex:that.gender
-    }
-    const res = await that.$http.post('/Register/Register',data);
-    if(res.data.success == false) {
-        that.$message.error(res.data.msg);
-    }else {
-        that.$message({
-            message: res.data.msg,
-            type: 'success'
-          });
-       return res;
-    }
-}

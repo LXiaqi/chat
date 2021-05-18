@@ -1,7 +1,8 @@
 <template>
   <div class="chat">
     <van-nav-bar
-      safe-area-inset-top 
+      class="nav_bar_chat"
+      safe-area-inset-top
       title="在线客服"
       left-text=""
       left-arrow
@@ -9,7 +10,7 @@
     
     />
     
-    <div :class="bottom_type == false ? 'chat_content' : 'chat_content2' ">
+    <div :class="bottom_type == false ? 'chat_content' : 'chat_content2' " ref="content_view_m">
       <div v-for="(item,index) in chatList" :key="index" class="chat_mob">
         <div v-show="item.Types == 0" class="chat_mob_left">
             <div class="chat_details_info_box">
@@ -31,11 +32,11 @@
       </div>
     </div>
     <div class="chat_input_box">
-       <van-field class="chat_ipt" v-model="value"  placeholder="" @change="iptFocus()" />
+       <van-field class="chat_ipt" v-model="value"  placeholder=""  />
        <img class="chat_add_icon" src="./../../assets/img/chatmob/add.png" alt="" srcset="" v-show="!sendBtnType" @click="add_img()">
        <van-button  v-show="sendBtnType" class="chat_add_send" type="primary" @click="send()">发送</van-button>
     </div>
-    <div class="img_box" v-show="bottom_type" >
+    <div class="img_box" v-show="bottom_type" safe-area-inset-bottom>
       <el-upload
           class="avatar-uploader"
           action="/Communication/UploadFiles"
@@ -52,6 +53,8 @@ import { GetUserData,distribution, } from "@/api/waiters";
 export default {
   data() {
     return {
+      types_user:'1',
+      searchid:'1601',
       value:'',//输入框内容
       send_name:'', //发送方名字
       send_id:'', //发送方id
@@ -60,6 +63,7 @@ export default {
       chatList:[],//聊天内容列表
       sendBtnType:false, // 发送按钮的隐藏显示
       file:'',
+      demoChatHubProxy:{},
 
     }
   },
@@ -69,6 +73,7 @@ export default {
         _this.demoChatHubProxy = connection.createHubProxy("chatHub");  
           //接收私聊消息
          _this.demoChatHubProxy.on("remindMsg", function (sendId,sengName, message,img) {
+           console.log('接收私聊消息');
             console.log('发送方id：'+sendId+'接收方id:'+sengName+'消息内容：' + message);
              let data = {
                CustomerId:sendId,
@@ -78,12 +83,12 @@ export default {
                img:img
            }
            _this.chatList.push(data)
-          
+            _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
         });
              //显示发送的私聊消息
         _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,img){
            console.log(sendId+sengName+message);
-          
+           console.log('显示发送的私聊消息');
           let data = {
                UserId:sendId,
                UserName:sengName,
@@ -91,7 +96,8 @@ export default {
                Types:1,
                img:img
           }
-              _this.chatList.push(data)
+              _this.chatList.push(data);
+              _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
        },); 
       connection
         .start()
@@ -99,8 +105,8 @@ export default {
            _this.$toast.success('连接成功');
            distribution(_this).then(res => {
              _this.receive_id = res.data.data.UserId;
-              console.log(_this.receive_id);
               _this.demoChatHubProxy.invoke("addOnlineUser", _this.send_id,_this.send_name,1);
+              console.log('建立连接会话');
            })
           
        
@@ -109,10 +115,19 @@ export default {
           _this.$toast.fail('连接失败');
         });
   },
+  watch:{
+    value:function(newV,oldV){
+        if(newV == '') {
+          this.sendBtnType = false;
+        }else {
+          this.sendBtnType = true;
+        }
+       
+    }
+  },
   mounted() {
     this.info();
   },
-  
   methods: {
     // 返回
     onClickLeft() {
@@ -141,18 +156,10 @@ export default {
 
       }
     },
-    // 输入框获取焦点
-    iptFocus() {
-      if(this.value == '') {
-         this.sendBtnType = false;
-      }else {
-        this.sendBtnType = true;
-      }
-     
-    },
+
    
     handleAvatarSuccess(res,file) {
-      this.file ='http://files.365lawhelp.com/'+res.data;
+      this.file ='https://files.365lawhelp.com/'+res.data;
       this.sendBtnType = true;
        this.demoChatHubProxy.invoke('sendPrivateMsg',this.send_id,this.receive_id,this.file,1,true); 
         this.bottom_type = false;
@@ -163,24 +170,33 @@ export default {
 </script>
 
 <style scoped>
+.nav_bar_chat {
+  position: fixed;
+  width: 100vw;
+  height: 6.3vh;
+  line-height: 6.3vh;
+}
 .chat_content {
   width: 100%;
-  height: 558px;
+  height: 85vh;
   background-color: #F2F2F2;
   overflow: hidden;
   overflow-y: scroll;
+  padding-top: 6.3vh;
 }
 .chat_content2 {
    width: 100%;
-  height: 455px;
+  height: 70vh;
   background-color: #F2F2F2;
   overflow: hidden;
   overflow-y: scroll;
+  padding-top: 6.3vh;
 }
 .chat_input_box {
   background-color: #F5F5F5;
-  height: 62px;
+  height: 8.6vh;
   position: relative;
+  
 }
 .chat_ipt {
   width: 74vw;
@@ -209,7 +225,7 @@ export default {
 }
 .img_box {
   background-color: #F5F5F5;
-  height: 103px;
+  height: 14.8vh;
   border-top: 1px solid #ccc;
 }
 .img_box img {
@@ -223,28 +239,28 @@ export default {
 .chat_mob_right {
     text-align: end;
     margin-inline-end: 16px;
-    height: 86px;
+   
     padding: 12px 0;
 }
 .chat_mob_left {
-    height: 92px;
-    padding: 12px 0;
+    
+    padding: 12px 12px;
 }
 .chatimg_{
   width: 40px;
   height: 40px;
   border-radius: 50%;
-   vertical-align: middle;
+   vertical-align: top;
 }
 .chat_active_img {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-   vertical-align: middle;
+   vertical-align: top;
 }
 .chatimg_s {
   width: 130px;
-  vertical-align: text-top;
+  vertical-align: top;
 }
 .chat_details_sentence_s {
   background: #0a80FF;
@@ -253,7 +269,7 @@ export default {
   border-radius: 8px 0px 8px 8px;;
   display: inline-block;
   margin: 0 12px;
-  width: 160px;
+  max-width: 200px;
   word-wrap: break-word;
 }
 .chat_details_sentence {
@@ -262,7 +278,7 @@ export default {
   border-radius: 8px 0px 8px 8px;;
   display: inline-block;
   margin: 0 12px;
-  width: 160px;
+   max-width: 200px;
   word-wrap: break-word;
 }
 </style>

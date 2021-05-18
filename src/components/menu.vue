@@ -39,7 +39,8 @@ export default {
                 icon:'el-icon-time',
                 name:'历史会话',
                 path:'/history'
-            }
+            },
+           
         ],
         type:1,//侧边栏状态
     };
@@ -97,7 +98,8 @@ export default {
   left: 24px;
 }
 .el-icon-chat-round,
-.el-icon-time {
+.el-icon-time,
+.el-icon-pie-chart {
   display: block;
   font-size: 18px;
   width: 56px;
@@ -108,7 +110,8 @@ export default {
   text-align: center;
 }
 .el-icon-chat-round:hover,
-.el-icon-time:hover {
+.el-icon-time:hover,
+.el-icon-pie-chart:hover {
  color: #6AACF4;
 }
 #active {

@@ -28,7 +28,7 @@ export async function getCustomerInfo(that) {
 }
 // 获取用户登录信息
 export async function GetUserData(that) {
-    const res = await that.$http.get('/Communication/GetUserData?custId=1601');
+    const res = await that.$http.get('/Communication/GetUserData?custId='+that.searchid+'&types='+that.types_user);
     if(res.data.success == false) {
         that.$message.error(res.data.msg);
     }else {

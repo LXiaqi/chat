@@ -9,11 +9,14 @@ import 'signalr';
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 import Axios from 'axios';
+import VueCookies from 'vue-cookies'
+
 Vue.prototype.$http = Axios
 Vue.http = Axios
 Vue.config.productionTip = false
 Vue.use(Vant);
 Vue.use(ElementUI);
+Vue.use(VueCookies);
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

@@ -14,8 +14,10 @@ export default new Router({
       component: menu,
       children: [
         {path: '/', name: 'current', component: current},  // 当前会话
-        {path: '/history', name: 'history', component: page('waiters/history')},  // 当前会话
+        {path: '/history', name: 'history', component: page('waiters/history')},  // 历史会话
+      
 
+        
       ]
     },
     // pc 的登陆注册
