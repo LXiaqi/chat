@@ -40,7 +40,14 @@
                                 </div>
                             </div>
                             <div class="chat_details_sentence">
-                                {{item.Message}}
+                                <span v-show="!item.img"> {{ item.Message }}</span>
+                                <el-image
+                                    class="img_chat"
+                                    v-if="item.img"
+                                    :src="item.Message"
+                                    :preview-src-list="[item.Message]"
+                                    alt=""
+                                ></el-image>
                             </div>
                         </div>
                         <div v-show="item.Types == 0" class="chat_my_right">
@@ -52,9 +59,16 @@
                                 </div>
                             </div>
                             <div class="chat_my_right_msgbox">
-                               <span class="chat_details_sentence_s">
+                               <span class="chat_details_sentence_s" v-show="!item.img">
                                     {{item.Message}}
                                </span>
+                                <el-image
+                                    class="img_chat"
+                                    v-if="item.img"
+                                    :src="item.Message"
+                                    :preview-src-list="[item.Message]"
+                                    alt=""
+                                ></el-image>
                             </div>
                         </div>
                     </div>
@@ -100,7 +114,7 @@ export default {
          customer_name:'',// 聊天详情中左上角客户名字
          page:1, //当前页数
          pagenum:10,// 每页条数
-         conversationID:'', // 当前选中会话的id
+         user_id:'', // 当前选中会话的id
          conversationList:[], // 当前选中会话的聊天内容， 数组
          chat_sendout:'',// 发送聊天文本域内容
          demoChatHubProxy:{},
@@ -126,7 +140,7 @@ export default {
        chatList(this).then(res => {
             this.chat_list = res.data.data;
             this.customer_name =  this.chat_list[0].CustomerName;
-            this.conversationID =  this.chat_list[0].Id;
+            this.user_id =  this.chat_list[0].UserId;
             this.userInformationId  =  this.chat_list[0].CustomerId
             this.userinfo();
        });    
@@ -140,6 +154,13 @@ export default {
                  this.more_show = true
             }
             this.total = Math.ceil(res_data.data.recordsTotal/10);
+             for (let i = 0; i < res_data.data.data.length; i++) {
+                if (res_data.data.data[i].Message.indexOf("https://files.365lawhelp.com") == -1) {
+                    res_data.data.data[i].img = false;
+                } else {
+                    res_data.data.data[i].img = true;
+                }
+            }
             this.conversationList = res_data.data.data;
         })    
    },
@@ -148,7 +169,7 @@ export default {
         this.page = 1;//还原
         this.chat_state = index; // 选中下标改变状态来更改钥匙
         this.customer_name =  data.CustomerName; // 选中聊天的对方名字
-        this.conversationID =  data.Id; // 当前会话id
+        this.user_id =  data.UserId; // 当前会话id
         this.userInformationId  = data.CustomerId; // 选中会话的对方id
         this.userinfo();
    },
@@ -161,6 +182,15 @@ export default {
             conversation(this).then(res => {
             for(let i = 0; i < res.data.data.length; i++){
                 this.conversationList.unshift(res.data.data[i]);
+                if (
+                res.data.data[i].Message.indexOf(
+                    "https://files.365lawhelp.com"
+                ) == -1
+                ) {
+                res.data.data[i].img = false;
+                } else {
+                res.data.data[i].img = true;
+                }
             }
                 this.more_type = false;
             })  
@@ -185,166 +215,183 @@ export default {
 
 <style scoped>
 .chat_content_pc {
-    height: 100vh;
-    display: flex;
+  height: 100vh;
+  display: flex;
 }
 .chat_list {
-    width: 350px;
-    height: 100vh;
-    border-right: 1px solid #EBEBEB;
+  width: 350px;
+  height: 100vh;
+  border-right: 1px solid #ebebeb;
 }
 .lable {
-    margin-left:32px;
-    font-size: 20px;
-    line-height: 60px;
-    font-weight: bold;
+  margin-left: 32px;
+  font-size: 20px;
+  line-height: 60px;
+  font-weight: bold;
 }
 /* 搜索框 */
 .chat_input_pcbox {
-    margin: 20px;
+  margin: 20px;
 }
 /* 聊天列表 */
 #chat_select {
-    background-color: #F5F5F5;
+  background-color: #f5f5f5;
 }
 .chats_content_box {
-    height: 820px;
-    overflow: hidden;
-    overflow-y: scroll;
+  height: 820px;
+  overflow: hidden;
+  overflow-y: scroll;
 }
 .chat_on_box {
-    position: relative;
-    width: 340px;
-    height: 80px;
+  position: relative;
+  width: 340px;
+  height: 80px;
 }
 
 .chat_img {
-    width: 40px;
-    height: 40px;
-    border-right: 50%;
-    position: absolute;
-    left: 24px;
-    top: 18px;
+  width: 40px;
+  height: 40px;
+  border-right: 50%;
+  position: absolute;
+  left: 24px;
+  top: 18px;
 }
 .chat_time {
-    font-size: 12px;
-    color: #ccc;
-    position: absolute;
-    right: 24px;
-    top: 18px;
+  font-size: 12px;
+  color: #ccc;
+  position: absolute;
+  right: 24px;
+  top: 18px;
 }
 .chat_name {
-    width: 100px;
-    font-size: 16px;
-    font-weight: 600;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    word-break: break-all;
-    position: absolute;
-    left: 80px;
-    top: 16px;
+  width: 100px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  word-break: break-all;
+  position: absolute;
+  left: 80px;
+  top: 16px;
 }
 .chat_userinfo {
-    width: 100px;
-    font-size: 14px;
-    font-weight: 500;
-     white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    word-break: break-all;
-    position: absolute;
-    left: 80px;
-    top: 46px;
+  width: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  word-break: break-all;
+  position: absolute;
+  left: 80px;
+  top: 46px;
 }
 /* 聊天内容聊天详情 */
 .chat_details {
-    width: 1449px;
-    height: 100vh;
+  width: 1449px;
+  height: 100vh;
+}
+.chat_details2 {
+  width: 1049px;
+  height: 100vh;
 }
 .chat_details_head {
-    border-bottom: 1px solid #EBEBEB;
+  border-bottom: 1px solid #ebebeb;
 }
 .active_img {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    vertical-align: middle;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  vertical-align: middle;
 }
 .chat_details_head span {
-    display: inline-block;
-    padding-top: 18px;
+  display: inline-block;
+  padding-top: 18px;
 }
 .head_btn {
-    float: right;
-    margin-top: 12px;
-    margin-right: 20px;
+  float: right;
+  margin-top: 12px;
+  margin-right: 20px;
 }
 /* 聊天内容 */
 .chat_details_content {
-    height: 760px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #EBEBEB;
-    overflow: hidden;
-    overflow-y: scroll;
+  height: 720px;
+  padding: 20px;
+  border-bottom: 1px solid #ebebeb;
+  overflow: hidden;
+  overflow-y: scroll;
 }
 .tips {
-    text-align: center;
-    color: #778899;
-    font-size: 12px;
-    display: block;
+  text-align: center;
+  color: #778899;
+  font-size: 12px;
+  display: block;
 }
 /* 聊天细节 */
 .chat_details_info_box img {
- width: 20px;
- height: 20px;
- border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
 }
 .chat_details_active_time {
-    display: inline-block;
-    vertical-align: middle;
-    margin-left: 18px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 18px;
 }
 .chat_details_active_time span {
-    font-size: 12px;
-    color: #cccc;
-    font-style:oblique;
+  font-size: 12px;
+  color: #cccc;
+  font-style: oblique;
 }
 .chat_details_sentence {
-    background: #EBEBEB;
-    padding: 10px;
-    border-radius: 6px;
-    width: max-content;
-    margin: 20px 0;
+  background: #ebebeb;
+  padding: 10px;
+  border-radius: 6px;
+  width: max-content;
+  margin: 0 0 36px 0;
+  max-width: 1000px;
+  word-wrap: break-word;
 }
 .chat_my_right {
-    text-align: end;
-    margin-inline-end: 80px;
-    height: 100px;;
+  text-align: end;
+  margin-inline-end: 20px;
 }
 .chat_my_left {
-    height: 100px;;
+}
+.chat_my_left2 {
 }
 .chat_my_right_msgbox {
-    margin-top: 18px;
+  margin-top: 18px;
 }
 .chat_details_sentence_s {
-    background: #0a80FF;
-    color: #fff;
-    padding: 10px;
-    border-radius: 6px;
-    margin: 20px 0;
+  background: #0a80ff;
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 0 0 36px 0;
+  max-width: 1000px;
+  word-wrap: break-word;
+  display: inline-block;
 }
 /* 聊天文本域部分 */
 .chat_sendout_box {
-    margin: 10px;
+  margin: 10px;
 }
 .chat_sendout_ipt {
-    width: 1000px;
-    margin: 0px 20px 0 0;
+  width: 1000px;
+  margin: 0px 20px 0 0;
 }
 /* 用户信息 */
 .user_customer {
-    margin: 25px 15px;
+  margin: 25px 15px;
+}
+.img_chat {
+  width: 300px;
+}
+.avatar-uploader {
+  display: inline-block;
+  font-size: 24px;
+  margin:0 30px;
 }
 </style>

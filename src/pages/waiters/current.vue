@@ -28,7 +28,7 @@
       </div>
     </div>
     <!-- 聊天内容聊天详情 -->
-    <div class="chat_details">
+    <div :class="quickType == 0 ? 'chat_details' : 'chat_details2' " v-show="right_type == 1">
       <el-container>
         <!-- 头部信息 -->
         <el-header class="chat_details_head">
@@ -41,9 +41,13 @@
           <el-button class="head_btn" @click="user_information()"
             >...</el-button
           >
+          <el-button
+            class="el-icon-chat-round head_btn"
+            @click="Fastreply()"
+          ></el-button>
         </el-header>
         <!-- 聊天内容 -->
-        <el-main>
+        <el-main style="padding: 0">
           <div class="chat_details_content" ref="content_view">
             <span
               class="tips"
@@ -124,9 +128,26 @@
             >
               <i class="el-icon-circle-plus-outline"></i>
             </el-upload>
+              <el-button type="success" @click="end()">结束</el-button>
           </div>
         </el-main>
       </el-container>
+    </div>
+    <!-- 快捷回复 -->
+    <div class="quick" v-show="quickType == 1">
+      <div class="quickTitle">
+        <span>快捷回复</span>
+        <el-button class="el-icon-close" type="mini" @click="ShutDown()"></el-button>
+      </div>
+      <el-table :data="quickData" height="880"  style="width: 100%">
+        <el-table-column prop="Contents" label="内容" width="300">
+        </el-table-column>
+        <el-table-column  label="操作" width="80">
+          <template slot-scope="scope">
+            <el-button type="primary" size="mini" @click="sendQuick(scope.row.Contents)">发送</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
     <!-- 个人信息的模态框 -->
     <el-drawer title="用户资料" :visible.sync="drawer">
@@ -143,12 +164,7 @@
 </template>
 
 <script>
-import {
-  chatList,
-  conversation,
-  getCustomerInfo,
-  GetUserData,
-} from "@/api/waiters";
+import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession} from "@/api/waiters";
 export default {
   data() {
     return {
@@ -163,7 +179,7 @@ export default {
       customer_name: "", // 聊天详情中左上角客户名字
       page: 1, //当前页数
       pagenum: 10, // 每页条数
-      user_id: "", // 当前选中会话的id
+      user_id: "", // 当前客服id
       conversationList: [], // 当前选中会话的聊天内容， 数组
       chat_sendout: "", // 发送聊天文本域内容
       demoChatHubProxy: {},
@@ -175,6 +191,9 @@ export default {
       total: 0, // 总页数
       file: "", // 图片
       msg: "",
+      quickData:[],
+      quickType:0, // 侧边的快捷状态
+      right_type:1, // 判断聊天列表没有数据的时候右边栏目隐藏, 1是有数据，0 是没有
     };
   },
   created() {
@@ -332,11 +351,19 @@ export default {
     // 左侧聊天列表的渲染
     info() {
       chatList(this).then((res) => {
-        this.chat_list = res.data.data;
-        this.customer_name = this.chat_list[0].CustomerName;
-        this.user_id = this.chat_list[0].UserId;
-        this.userInformationId = this.chat_list[0].CustomerId;
-        this.userinfo();
+        if(res.data.data.length == 0) {
+          this.chat_list = [];
+          this.right_type = 0;
+          this.userinfo();
+        }else {
+          this.right_type = 1;
+          this.chat_list = res.data.data;
+          this.customer_name = this.chat_list[0].CustomerName;
+          this.user_id = this.chat_list[0].UserId;
+          this.userInformationId = this.chat_list[0].CustomerId;
+          this.userinfo();
+        }
+       
       });
       GetUserData(this).then((res) => {
         this.id = res.data.sendId;
@@ -360,11 +387,7 @@ export default {
         }
         this.total = Math.floor(res_data.data.recordsTotal / 10);
         for (let i = 0; i < res_data.data.data.length; i++) {
-          if (
-            res_data.data.data[i].Message.indexOf(
-              "https://files.365lawhelp.com"
-            ) == -1
-          ) {
+          if (res_data.data.data[i].Message.indexOf("https://files.365lawhelp.com") == -1) {
             res_data.data.data[i].img = false;
           } else {
             res_data.data.data[i].img = true;
@@ -447,6 +470,7 @@ export default {
         true
       );
     },
+    // 键盘事件
     keyDown(e) {
       if (e.ctrlKey && e.keyCode == 13) {
         //用户点击了ctrl+enter触发
@@ -468,6 +492,28 @@ export default {
         }
       }
     },
+    // 快捷回复
+    Fastreply() {
+      this.quickType = 1;
+      quickList(this).then((res) => {
+        console.log(res);
+        this.quickData = res.data.data;
+      });
+    },
+    // 快捷发送
+    sendQuick(content) {
+       this.demoChatHubProxy.invoke("sendPrivateMsg",this.id,this.userInformationId,content,0,false);
+    },
+    // 关闭快捷侧边栏
+    ShutDown() {
+      this.quickType = 0;
+    },
+    // 结束会话
+    end() {
+      endSession(this).then(res => {
+        this.info();
+      })
+    }
   },
 };
 </script>
@@ -551,6 +597,10 @@ export default {
   width: 1449px;
   height: 100vh;
 }
+.chat_details2 {
+  width: 1049px;
+  height: 100vh;
+}
 .chat_details_head {
   border-bottom: 1px solid #ebebeb;
 }
@@ -571,8 +621,8 @@ export default {
 }
 /* 聊天内容 */
 .chat_details_content {
-  height: 760px;
-  padding-bottom: 20px;
+  height: 720px;
+  padding: 20px;
   border-bottom: 1px solid #ebebeb;
   overflow: hidden;
   overflow-y: scroll;
@@ -610,7 +660,7 @@ export default {
 }
 .chat_my_right {
   text-align: end;
-  margin-inline-end: 80px;
+  margin-inline-end: 20px;
 }
 .chat_my_left {
 }
@@ -647,6 +697,21 @@ export default {
 .avatar-uploader {
   display: inline-block;
   font-size: 24px;
+  margin:0 30px;
+}
+/* 快捷回复 */
+.quick {
+  width: 399px;
+  height: 100vh;
+  border-left: 1px solid #ccc;
+}
+.quickTitle {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 30px;
+}
+.el-icon-close {
   margin-left: 30px;
 }
 </style>

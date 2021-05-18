@@ -10,7 +10,7 @@ export async function chatList(that) {
 }
 // 会话详情内容（当前会话）
 export async function conversation(that) {
-    const res = await that.$http.get('/ChatHistory/GetChatHistoryRecord?start='+that.page+'&length='+that.pagenum+'&customerId='+that.userInformationId+'&userId='+that.user_id);
+    const res = await that.$http.get('/ChatHistory/GetChatHistoryRecord?start='+that.page+'&length='+that.pagenum+'&customerId='+that.userInformationId+'&userId='+that.user_id+'&types='+that.chatType);
     if(res.data.success == false) {
         that.$message.error(res.data.msg);
     }else {
@@ -38,6 +38,24 @@ export async function GetUserData(that) {
 // 分配客服id
 export async function distribution(that) {
     const res = await that.$http.get('/Communication/GetUserId?custid='+that.send_id);
+    if(res.data.success == false) {
+        that.$message.error(res.data.msg);
+    }else {
+       return res;
+    }
+}
+//快捷回复列表
+export async function quickList(that) {
+    const res = await that.$http.get('/Customer/GetCustomerclassByGreet?CustomerId='+that.userInformationId);
+    if(res.data.success == false) {
+        that.$message.error(res.data.msg);
+    }else {
+       return res;
+    }
+}
+// 结束会话
+export async function endSession(that) {
+    const res = await that.$http.get('/Reception/FinishChat?customerId='+that.userInformationId+'&userId='+that.user_id);
     if(res.data.success == false) {
         that.$message.error(res.data.msg);
     }else {

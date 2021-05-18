@@ -10,7 +10,7 @@ import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 import Axios from 'axios';
 import VueCookies from 'vue-cookies'
-
+import store from './store/index';
 Vue.prototype.$http = Axios
 Vue.http = Axios
 Vue.config.productionTip = false
@@ -21,6 +21,7 @@ Vue.use(VueCookies);
 new Vue({
   el: '#app',
   router,
+  store,
   components: { App },
   template: '<App/>'
 })

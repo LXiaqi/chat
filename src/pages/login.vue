@@ -35,7 +35,8 @@ export default {
         // 判断是登录还是注册事件
       login(this).then(res => {
           if(res.data.success == true) {
-                this.$router.push({
+            this.$store.dispatch('saveUserinfo', res.data.data);
+              this.$router.push({
                   name: 'current',
               });
           }

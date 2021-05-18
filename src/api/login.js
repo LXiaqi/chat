@@ -12,3 +12,21 @@ export async function login(that) {
        return res;
     }
 }
+// 登录状态更改
+export async function changeStatus(that) {
+    const res = await that.$http.get('/UserInfo/ChangeStatus?Status='+that.out_types);
+    if(res.data.success == false) {
+        that.$message.error(res.data.msg);
+    }else {
+       return res;
+    }
+}
+// 退出登录
+export async function logout(that) {
+    const res = await that.$http.get('/Login/Out');
+    if(res.data.success == false) {
+        that.$message.error(res.data.msg);
+    }else {
+       return res;
+    }
+}

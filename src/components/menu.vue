@@ -10,7 +10,20 @@
                  <div :class="item.icon" @click="menu_to(item.id)" :id="type == item.id ? 'active' :'' " ></div>
             </router-link>
         </el-tooltip>
+
+        <div class="my_active_box " @click="setUserType()" >
+          <div class="user_active_">
+             <el-tooltip  effect="light" :content="userinfos.sendName" placement="right"  >
+               <img src="./../assets/img/waiters/avatar_group.png" alt="">
+             </el-tooltip>
+          </div>
+           <div :class="userinfos.statuz == 1 ? 'green' : (userinfos.statuz == 2 ? 'red' : 'yellow') "></div>
+        </div>
       </div>
+    </div>
+    <div class="user_out" v-show="mystate == 1 ">
+      <div @click="out_type(item.type)"  v-for="item in outList" :key="item.type">{{item.val}}</div>
+    
     </div>
     </el-aside>
     <el-container>
@@ -23,9 +36,13 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
+import { GetUserData } from "@/api/waiters";
+import { changeStatus,logout} from "@/api/login";
 export default {
   data() {
     return {
+        userinfos:{}, //用户信息
         // 侧边栏列表
         munuList:[
             {
@@ -40,13 +57,39 @@ export default {
                 name:'历史会话',
                 path:'/history'
             },
-           
+        ],
+        outList: [
+          {
+            type:1,
+            val:'在线'
+          },
+          {
+            type:2,
+            val:'忙碌'
+          },
+          {
+            type:3,
+            val:'其它'
+          },
+          {
+            type:4,
+            val:'退出'
+          },
         ],
         type:1,//侧边栏状态
+       searchid:'',
+       types_user:0,
+       out_types:0, // 用户登录状态
+       mystate:0, // 状态框的显示隐藏
     };
   },
-  created() {
+computed: {
+    ...mapState(['userinfo']),
+},
 
+
+  created() {
+ 
   },
   mounted() {
     this.info();
@@ -54,18 +97,38 @@ export default {
 
   methods: {
       info() {
-
+         GetUserData(this).then(res => {
+           console.log(res);
+           this.userinfos = res.data
+         }) 
       },
       // 侧边栏的点击
       menu_to(id) {
           this.type = id;
       },
+      //状态改变
+      setUserType() {
+        this.mystate = 1;
+      },
+      out_type(type) {
+        this.out_types = type;
+        if(type == 4) {
+          logout(this).then(res => {
+             this.$router.replace("/login");
+          })
+        }else {
+            changeStatus(this).then(res => {
+              this.mystate = 0;
+              this.info();
+            })
+        }
+      
+      }
      
   },
   watch: {
     $route: {
        handler:function(route){
-        console.log(route);
         if(route.name == 'current'){
           this.type = 1
         }
@@ -74,7 +137,7 @@ export default {
         }
       },
       immediate:true
-      }
+      },
     },
 };
 </script>
@@ -119,5 +182,52 @@ export default {
     color: #6AACF4;
   text-align: center;
 
+}
+.my_active_box {
+      width: 60px;
+    position: absolute;
+    top: 760px;
+    left: 12px;
+}
+.my_active_box img {
+  width: 40px;
+  height: 40px;
+}
+.green {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: green;
+  border-radius: 50%;
+  margin: 0 0 4px -10px;
+}
+.red {
+   width: 10px;
+  display: inline-block;
+  height: 10px;
+  background: red;
+  border-radius: 50%;
+  margin: 0 0 4px -10px;
+}
+.yellow {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: yellow;
+  border-radius: 50%;
+  margin: 0 0 4px -10px;
+}
+.user_active_ {
+  display: inline-block;
+}
+/* 状态更改 */
+.user_out {
+      position: absolute;
+    bottom: 70px;
+    left: 100px;
+    background: #F5F5F6;
+    padding: 20px;
+    line-height: 28px;
+    border-radius: 8px;
 }
 </style>
