@@ -26,13 +26,18 @@ export default new Router({
       name: 'login',
       component: page('login'),
     },
-    // 移动端页面
+    // 移动端聊天页面
     {
       path: '/lawOnline',
       name: 'lawOnline',
       component: page('lawOnline/chatmob'),
     },
-   
+    // 移动端评价页面
+    {
+      path: '/leaveMessage',
+      name: 'leaveMessage',
+      component: page('lawOnline/leaveMessage'),
+    },
      
   ]
 })

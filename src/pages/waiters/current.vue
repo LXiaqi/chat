@@ -200,17 +200,17 @@ export default {
     const _this = this;
     var connection = $.hubConnection("");
     _this.demoChatHubProxy = connection.createHubProxy("chatHub");
-
-    _this.demoChatHubProxy.on(
-      "addContosoChatMessageToPage",
-      function (message) {
-        console.log("消息内容：" + message);
+    // 首问语
+    _this.demoChatHubProxy.on("addContosoChatMessageToPage",
+      function (message, type) {
+        console.log("消息内容：" + message+'状态:' +type);
         _this.msg = message;
       }
     );
 
     //显示新用户加入消息
     _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type) {
+      console.log(id+userName+type);
       if (type == 1) {
         console.log("你的名字" + userName + "你的id:" + id);
         let data = {
@@ -231,7 +231,7 @@ export default {
           _this.id,
           _this.userInformationId,
           _this.msg,
-          0,
+          2,
           false
         );
       }
@@ -337,6 +337,7 @@ export default {
           message: "连接成功",
           type: "success",
         });
+        console.log(connection.id);
         _this.demoChatHubProxy.invoke("addOnlineUser", _this.id, _this.name, 0);
       })
       .fail(function () {
@@ -385,7 +386,7 @@ export default {
         } else {
           this.more_show = true;
         }
-        this.total = Math.floor(res_data.data.recordsTotal / 10);
+        this.total = Math.ceil(res_data.data.recordsTotal / 10);
         for (let i = 0; i < res_data.data.data.length; i++) {
           if (res_data.data.data[i].Message.indexOf("https://files.365lawhelp.com") == -1) {
             res_data.data.data[i].img = false;
@@ -418,7 +419,6 @@ export default {
         this.more_type = true;
         conversation(this).then((res) => {
           for (let i = 0; i < res.data.data.length; i++) {
-            this.conversationList.unshift(res.data.data[i]);
             if (
               res.data.data[i].Message.indexOf(
                 "https://files.365lawhelp.com"
@@ -428,6 +428,7 @@ export default {
             } else {
               res.data.data[i].img = true;
             }
+            this.conversationList.unshift(res.data.data[i]);
           }
           this.more_type = false;
         });
@@ -510,10 +511,11 @@ export default {
     },
     // 结束会话
     end() {
+       this.demoChatHubProxy.invoke("sendPrivateMsg",this.id,this.userInformationId,'关闭会话',0,false);
       endSession(this).then(res => {
         this.info();
       })
-    }
+    },
   },
 };
 </script>
