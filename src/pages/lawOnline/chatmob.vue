@@ -14,23 +14,24 @@
         <van-loading v-show="!more_show" color="#1989fa" size="18" />
       </div>
       <div v-for="(item,index) in chatList" :key="index" class="chat_mob">
-        <div v-show="(item.Types == 0 || item.Types == 2) && item.evaluateType == false" class="chat_mob_left">
+        <div v-if="(item.Types == 0 || item.Types == 2) && item.State != 2" class="chat_mob_left">
             <div class="chat_details_info_box">
                 <img class="chat_active_img"  src="./../../assets/img/waiters/avatar_group.png" alt="">
-                <span class="chat_details_sentence" v-show="!item.img"> {{item.Message}}</span>
-                 <img class="chatimg_s" :src="item.Message" alt="" v-if="item.img" @click="amplification(item.Message)">
+                <span class="chat_details_sentence" v-show="item.State == 0"> {{item.Message}}</span>
+                 <img class="chatimg_s" :src="item.Message" alt="" v-if="item.State == 1" @click="amplification(item.Message)">
             </div>
         </div>
-        <div v-show="(item.Types == 0 || item.Types == 2) && item.evaluateType == true" class="evaluate">
-          <van-radio-group v-model="evaluateRadio" direction="horizontal">
-            <van-radio name="0">非常满意</van-radio>
-            <van-radio name="1">满意</van-radio>
-            <van-radio name="2">一般</van-radio>
-            <van-radio name="3">差</van-radio>
+        <div v-if="(item.Types == 0 || item.Types == 2) && item.State == 2" class="evaluate">
+          <van-radio-group v-model="item.Satisfaction" direction="horizontal" @change="groupchange($event)" :disabled="item.btntype">
+            <van-radio name=0>非常满意</van-radio>
+            <van-radio name=1>满意</van-radio>
+            <van-radio name=2>一般</van-radio>
+            <van-radio name=3>差</van-radio>
           </van-radio-group>
           <div>
             <van-field
-                v-model="evaluate_val"
+                @input="textchange($event)"
+                v-model="item.Message"
                 rows="3"
                 autosize
                 type="textarea"
@@ -40,15 +41,15 @@
               />
           </div>
           <div class="evaluate_btn">
-            <van-button class="submit_btn_s" type="primary" size="small">提交</van-button>
+            <van-button :disabled="item.btntype" class="submit_btn_s" type="primary" size="small" @click="submit()">{{item.btntype ?'已评价' :'评价'}}</van-button>
           </div>
         </div>
-        <div v-show="item.Types == 1" class="chat_mob_right">
+        <div v-if="item.Types == 1" class="chat_mob_right">
             <div class="chat_details_info_box">
-               <span class="chat_details_sentence_s" v-show="!item.img">
+               <span class="chat_details_sentence_s" v-show="item.State == 0">
                     {{item.Message}}
                 </span>
-                <img class="chatimg_s" :src="item.Message" alt="" v-if="item.img" @click="amplification(item.Message)">
+                <img class="chatimg_s" :src="item.Message" alt="" v-if="item.State == 1" @click="amplification(item.Message)">
                 <img class="chatimg_" src="./../../assets/img/waiters/avatar_group.png" alt="">
             </div>
         </div>
@@ -73,11 +74,14 @@
 
 <script>
 import { GetUserData,distribution,chatHistoryMob } from "@/api/waiters";
+import { AddEvalua, } from "@/api/leaveMessage";
+
 import { ImagePreview } from 'vant';
 export default {
   data() {
     return {
-      types_user:'1',
+      receid:'', // 接待id
+      types_user:'1', // 分辨和服还是客户
       searchid:'1601',
       value:'',//输入框内容
       send_name:'', //发送方名字
@@ -86,99 +90,21 @@ export default {
       bottom_type:false, //底部状态
       chatList:[],//聊天内容列表
       sendBtnType:false, // 发送按钮的隐藏显示
-      file:'',
       demoChatHubProxy:{},
       page:1, //当前页
       pagenum:10, // 每页条数
       total:0, //总页数
       more_type:false, // 加载更多整个盒子的显示隐藏(小于10条不显示)
       more_show:true, // 加载更多的动画和字的切换
-      evaluate_val:'', // 评价留言
-      evaluateRadio:'', // 评价满意度
+      data_item: {
+        Message:'', // 评价留言
+        Satisfaction:'', // 评价满意度
+      }
+      
     }
   },
   created() {
-        const _this = this;
-        var connection = $.hubConnection("");
-        _this.demoChatHubProxy = connection.createHubProxy("chatHub");  
-          //接收私聊消息
-         _this.demoChatHubProxy.on("remindMsg", function (sendId,sengName, message,img) {
-           console.log('接收私聊消息');
-           if(message == '关闭会话') {
-             let data = {
-               CustomerId:sendId,
-               CustomerName:sengName,
-               Message:'',
-               Types:0,
-               img:img,
-               evaluateType:true
-              }
-              _this.chatList.push(data)
-           }else{
-              //console.log('发送方id：'+sendId+'接收方id:'+sengName+'消息内容：' + message);
-             let data = {
-               CustomerId:sendId,
-               CustomerName:sengName,
-               Message:message,
-               Types:0,
-               img:img,
-               evaluateType:false
-              }
-              _this.chatList.push(data)
-           }
-            _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
-        });
-             //显示发送的私聊消息
-        _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,type,img){
-           console.log('显示发送的私聊消息:'+sendId+ '发送方名字:'+sengName+'内容:'+message);
-          let data = {
-               UserId:sendId,
-               UserName:sengName,
-               Message:message,
-               Types:type,
-               img:img
-          }
-              _this.chatList.push(data);
-              _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
-       },); 
-      connection
-        .start()
-        .done(function () {
-           _this.$toast.success('连接成功');
-           distribution(_this).then(res => {
-             _this.demoChatHubProxy.invoke("addOnlineUser", _this.send_id,_this.send_name,1);
-              console.log('建立连接会话');
-             if(res.data.result == 9){
-               console.log('不在线');
-                  _this.demoChatHubProxy.invoke("GetGeegtingData");
-                  _this.demoChatHubProxy.on("greetingsMessageToPage",function(content){
-                    console.log(content);
-                    _this.sendMsg('00000000-0000-0000-0000-000000000000',_this.send_id,content,'2',false);
-                    _this.$dialog.alert({
-                        title: '提示',
-                        message: '客服均不在线.请前往留言',
-                        theme: 'round-button',
-                      }).then(() => {
-                         _this.$router.push({
-                            name: 'leaveMessage',
-                            query: {
-                                id: _this.send_id
-                              }
-                         });
-                      });
-                  });
-
-
-             }else {
-               _this.receive_id = res.data.data.UserId;
-             }
-           })
-          
-       
-        })
-        .fail(function () {
-          _this.$toast.fail('连接失败');
-        });
+      
   },
   watch:{
     value:function(newV,oldV){
@@ -192,12 +118,121 @@ export default {
   },
   mounted() {
     this.info();
+      const _this = this;
+      this.$toast.loading({
+          message: '加载中...',
+          forbidClick: true,
+        });
+        var connection = $.hubConnection("");
+        _this.demoChatHubProxy = connection.createHubProxy("chatHub");  
+          //接收私聊消息
+         _this.demoChatHubProxy.on("remindMsg", function (sendId,sengName, message,types,state) {
+            console.log('接收私聊消息发送方id：'+sendId+'接收方id:'+sengName+'消息内容：' + message);
+            _this.receiveShow(sendId,sengName, message,types,state)
+        });
+             //显示发送的私聊消息
+        _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,type,state){
+           console.log('显示发送的私聊消息:'+sendId+ '发送方名字:'+sengName+'内容:'+message);
+           _this.sendShow(sendId,sengName,message,type,state);
+       },); 
+      connection
+        .start()
+        .done(function () {
+           _this.distributionId();
+        })
+        .fail(function () {
+          _this.$toast.fail('连接失败');
+          _this.$toast.loading({
+              message: '加载中...',
+              forbidClick: false,
+            });
+        });
   },
   methods: {
+    // 单选按钮的change
+    groupchange($event){
+      this.data_item.Satisfaction = $event;
+    },
+    // 评价文本域的change
+    textchange($event) {
+      this.data_item.Message = $event;
+    },
+    // 评价提交
+    submit() {
+      AddEvalua(this).then(res => {
+        console.log(res);
+        this.info();
+      })
+    },
+
+    // 分配客服id
+    distributionId(){
+      const _this = this;
+      distribution(_this).then(res => {
+            _this.receid = res.data.data.Id;
+            _this.demoChatHubProxy.invoke("addOnlineUser", _this.send_id,_this.send_name,1);
+            console.log('加入会话成功');
+             _this.$toast.loading({
+                  message: '加载中...',
+                  forbidClick: false,
+                });
+              _this.$toast('连接成功');
+            _this.leave(res);
+          })
+    },
+    // 客服均不在线的时候留言操作
+    leave(res){
+       const _this = this;
+       if(res.data.result == 9){
+              console.log('不在线');
+                _this.demoChatHubProxy.invoke("GetGeegtingData");
+                _this.demoChatHubProxy.on("greetingsMessageToPage",function(content){
+                  _this.sendMsg(_this.receid,'00000000-0000-0000-0000-000000000000',_this.send_id,content,'2',0);
+                  _this.$dialog.alert({
+                      title: '提示',
+                      message: '客服均不在线.请前往留言',
+                      theme: 'round-button',
+                    }).then(() => {
+                        _this.$router.push({
+                          name: 'leaveMessage',
+                          query: {
+                              id: _this.send_id
+                            }
+                        });
+                    });
+                });
+            }else {
+              _this.receive_id = res.data.data.UserId;
+            }
+    },
+    // 发送私聊消息的展示
+    sendShow(sendId,sengName,message,type,state){
+      let data = {
+        UserId:sendId,
+        UserName:sengName,
+        Message:message,
+        Types:type,
+        State:state
+      }
+      this.chatList.push(data);
+      this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+    },
+    // 接收私聊消息的展示
+    receiveShow(sendId,sengName, message,types,state){
+      let data = {
+          CustomerId:sendId,
+          CustomerName:sengName,
+          Message:message,
+          Types:types,
+          State:state
+        }
+      this.chatList.push(data)
+      this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+    },
     // 发送消息 方法
-    sendMsg(send,receive,msg,type,img) {
+    sendMsg(receid,send,receive,msg,type,state) {
         // 第一个参数 : 发送方id, 第二个参数 接收方id, 第三个参数 内容, 第四个参数:发送类型,第五个参数,是否是图片
-        this.demoChatHubProxy.invoke('sendPrivateMsg',send,receive,msg,type,img); 
+        this.demoChatHubProxy.invoke('sendPrivateMsg',receid,send,receive,msg,type,state); 
     },
     // 返回
     onClickLeft() {
@@ -215,19 +250,16 @@ export default {
           }else {
             that.more_type = false;
           }
-          for (let i = 0; i < data.data.data.length; i++) {
-            if (data.data.data[i].Message.indexOf("https://files.365lawhelp.com") == -1) {
-              data.data.data[i].img = false;
-            } else {
-              data.data.data[i].img = true;
-            }
-            if(data.data.data[i].Message == '关闭会话') {
-              data.data.data[i].evaluateType = true;
+          that.total = Math.ceil(data.data.recordsTotal / 10);
+          for(let i = 0; i < data.data.data.length; i++){
+            if((data.data.data[i].Satisfaction == null || data.data.data[i].Satisfaction == '') && data.data.data[i].State == 2){
+                // 评价的时候， 如果Satisfaction没值的时候是btnytype是false，可以正常提交， Satisfaction有值的时候btntype 是true ， 按钮禁用
+                data.data.data[i].btntype = false;
             }else {
-              data.data.data[i].evaluateType = false;
+                data.data.data[i].btntype = true;
             }
           }
-          that.total = Math.ceil(data.data.recordsTotal / 10);
+           console.log( data.data.data);
           that.chatList = data.data.data;
         })
       })
@@ -239,19 +271,11 @@ export default {
         this.more_show = false;
         chatHistoryMob(this).then((res) => {
           for (let i = 0; i < res.data.data.length; i++) {
-            if (
-              res.data.data[i].Message.indexOf(
-                "https://files.365lawhelp.com"
-              ) == -1
-            ) {
-              res.data.data[i].img = false;
-            } else {
-              res.data.data[i].img = true;
-            }
-            if(res.data.data[i].Message == '关闭会话') {
-              res.data.data[i].evaluateType = true;
+             if((res.data.data[i].Satisfaction == null || res.data.data[i].Satisfaction == '') && res.data.data[i].State == 2){
+                // 评价的时候， 如果Satisfaction没值的时候是btnytype是false，可以正常提交， Satisfaction有值的时候btntype 是true ， 按钮禁用
+                res.data.data[i].btntype = false;
             }else {
-              res.data.data[i].evaluateType = false;
+                res.data.data[i].btntype = true;
             }
             this.chatList.unshift(res.data.data[i]);
           }
@@ -265,7 +289,7 @@ export default {
     //发送
     send() {
       console.log('发送id：'+this.send_id+',接收id：'+this.receive_id);
-      this.demoChatHubProxy.invoke('sendPrivateMsg',this.send_id,this.receive_id,this.value,1,false); 
+      this.sendMsg(this.receid,this.send_id,this.receive_id,this.value,1,0)
       this.value = '';
     },
     //底栏状态切换
@@ -279,9 +303,9 @@ export default {
     },
    // 图片上传
     handleAvatarSuccess(res,file) {
-      this.file ='https://files.365lawhelp.com/'+res.data;
+      let imgUrl ='https://files.365lawhelp.com/'+res.data;
       this.sendBtnType = true;
-       this.demoChatHubProxy.invoke('sendPrivateMsg',this.send_id,this.receive_id,this.file,1,true); 
+      this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
         this.bottom_type = false;
         this.sendBtnType = false;
     },

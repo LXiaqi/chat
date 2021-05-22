@@ -18,6 +18,15 @@ Vue.use(Vant);
 Vue.use(ElementUI);
 Vue.use(VueCookies);
 /* eslint-disable no-new */
+// 接口错误拦截
+Axios.interceptors.response.use(res => {
+  // console.log(res);
+  if(res.data.result == 7) {
+    router.replace("/login");
+  }
+  return res
+})
+// Vue.prototype.$http = Axios;
 new Vue({
   el: '#app',
   router,

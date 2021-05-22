@@ -10,7 +10,7 @@ export async function chatList(that) {
 }
 // 会话详情内容（当前会话）
 export async function conversation(that) {
-    const res = await that.$http.get('/ChatHistory/GetChatHistoryRecord?start='+that.page+'&length='+that.pagenum+'&customerId='+that.userInformationId+'&userId='+that.user_id+'&types='+that.chatType);
+    const res = await that.$http.get('/ChatHistory/GetChatHistoryRecord?start='+that.page+'&length='+that.pagenum+'&customerId='+that.userInformationId+'&userId='+that.user_id+'&types='+that.chatType+'&receptionId='+that.receptionId);
     if(res.data.success == false) {
         that.$message.error(res.data.msg);
     }else {
@@ -72,4 +72,12 @@ export async function chatHistoryMob(that) {
        return res;
     }
 }
-// 
+//  获取接待id
+export async function getreceid(that) {
+    const res = await that.$http.get('/Communication/GetUserId?custid='+that.userInformationId);
+    if(res.data.success == false) {
+        return res;
+    }else {
+       return res;
+    }
+}

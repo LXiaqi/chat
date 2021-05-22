@@ -107,6 +107,7 @@ import { chatList,conversation,getCustomerInfo } from "@/api/waiters";
 export default {
  data() {
      return {
+        receptionId:'', // 接待id
          chat_list:[], // 当前会话列表
          search_user:'',// 搜索内容
          chatType:1, // 聊天列表的状态 0是当前会话 1 是历史会话，
@@ -141,7 +142,8 @@ export default {
             this.chat_list = res.data.data;
             this.customer_name =  this.chat_list[0].CustomerName;
             this.user_id =  this.chat_list[0].UserId;
-            this.userInformationId  =  this.chat_list[0].CustomerId
+            this.userInformationId  =  this.chat_list[0].CustomerId;
+            this.receptionId = this.chat_list[0].Id;
             this.userinfo();
        });    
    },
@@ -171,6 +173,7 @@ export default {
         this.customer_name =  data.CustomerName; // 选中聊天的对方名字
         this.user_id =  data.UserId; // 当前会话id
         this.userInformationId  = data.CustomerId; // 选中会话的对方id
+        this.receptionId = data.Id;
         this.userinfo();
    },
    // 点击加载更多，渲染更多聊天内容

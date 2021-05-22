@@ -9,18 +9,8 @@
       </div>
       <!-- 聊天侧边栏 -->
       <div class="chats_content_box">
-        <div
-          @click="viewDetails(item, index)"
-          v-for="(item, index) in chat_list"
-          :key="item.Id"
-          class="chat_on_box"
-          :id="chat_state == index ? 'chat_select' : ''"
-        >
-          <img
-            class="chat_img"
-            src="./../../assets/img/waiters/avatar_group.png"
-            alt=""
-          />
+        <div @click="viewDetails(item, index)" v-for="(item, index) in chat_list" :key="item.Id" class="chat_on_box" :id="chat_state == index ? 'chat_select' : ''">
+          <img class="chat_img" src="./../../assets/img/waiters/avatar_group.png" alt=""/>
           <span class="chat_name">{{ item.CustomerName }}</span>
           <div class="chat_time">{{ item.Time }}</div>
           <div class="chat_userinfo">{{ item.Message }}</div>
@@ -32,103 +22,52 @@
       <el-container>
         <!-- 头部信息 -->
         <el-header class="chat_details_head">
-          <img
-            class="active_img"
-            src="./../../assets/img/waiters/avatar_group.png"
-            alt=""
-          />
+          <img class="active_img" src="./../../assets/img/waiters/avatar_group.png" alt=""/>
           <span> {{ customer_name }}</span>
-          <el-button class="head_btn" @click="user_information()"
-            >...</el-button
-          >
-          <el-button
-            class="el-icon-chat-round head_btn"
-            @click="Fastreply()"
-          ></el-button>
+          <el-button class="head_btn" @click="user_information()">...</el-button>
+          <el-button class="el-icon-chat-round head_btn" @click="Fastreply()"></el-button>
         </el-header>
         <!-- 聊天内容 -->
         <el-main style="padding: 0">
           <div class="chat_details_content" ref="content_view">
-            <span
-              class="tips"
-              @click="more()"
-              v-loading="more_type"
-              v-show="more_show"
-              >加载更多</span
-            >
-            <div
-              v-for="item in conversationList"
-              :key="item.Id"
-              :class="item.img == false ? 'chat_my_left' : 'chat_my_left2'"
-            >
-              <div v-show="item.Types == 1">
+            <span class="tips" @click="more()" v-loading="more_type" v-show="more_show" >加载更多</span>
+            <div v-for="item in conversationList" :key="item.Id" :class="item.img == false ? 'chat_my_left' : 'chat_my_left2'">
+              <div v-if="item.Types == 1">
                 <div class="chat_details_info_box">
-                  <img
-                    src="./../../assets/img/waiters/avatar_group.png"
-                    alt=""
-                  />
+                  <img src="./../../assets/img/waiters/avatar_group.png" alt="" />
                   <div class="chat_details_active_time">
                     <div>{{ item.CustomerName }}</div>
                     <span>{{ item.CreateTime }}</span>
                   </div>
                 </div>
                 <div class="chat_details_sentence">
-                  <span v-show="!item.img"> {{ item.Message }}</span>
-                  <el-image
-                    class="img_chat"
-                    v-if="item.img"
-                    :src="item.Message"
-                    :preview-src-list="[item.Message]"
-                    alt=""
-                  ></el-image>
+                  <span v-show="item.State == 0"> {{ item.Message }}</span>
+                  <el-image class="img_chat" v-if="item.State == 1" :src="item.Message" :preview-src-list="[item.Message]" alt=""></el-image>
                 </div>
               </div>
-              <div v-show="item.Types == 0" class="chat_my_right">
+              <div v-if="item.Types == 0" class="chat_my_right">
                 <div class="chat_details_info_box">
-                  <img
-                    src="./../../assets/img/waiters/avatar_group.png"
-                    alt=""
-                  />
+                  <img src="./../../assets/img/waiters/avatar_group.png" alt=""/>
                   <div class="chat_details_active_time">
                     <div style="text-align: left">{{ item.UserName }}</div>
                     <span>{{ item.CreateTime }}</span>
                   </div>
                 </div>
                 <div class="chat_my_right_msgbox">
-                  <span class="chat_details_sentence_s" v-show="!item.img">
-                    {{ item.Message }}
-                  </span>
-                  <el-image
-                    class="img_chat"
-                    v-if="item.img"
-                    :src="item.Message"
-                    :preview-src-list="[item.Message]"
-                    alt=""
-                  ></el-image>
+                  <span class="chat_details_sentence_s" v-show="item.State == 0"> {{ item.Message }}</span>
+                  <el-image class="img_chat" v-if="item.State == 1" :src="item.Message" :preview-src-list="[item.Message]" alt="" ></el-image>
                 </div>
               </div>
             </div>
           </div>
           <!-- 消息发送框 -->
           <div class="chat_sendout_box">
-            <el-input
-              type="textarea"
-              :rows="2"
-              placeholder="请输入内容"
-              v-model="chat_sendout"
-              class="chat_sendout_ipt"
-              @keydown.enter.native="keyDown"
-            ></el-input>
+            <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="chat_sendout" class="chat_sendout_ipt" @keydown.enter.native="keyDown"></el-input>
             <el-button type="primary" @click="sendOut()">发送</el-button>
-            <el-upload
-              class="avatar-uploader"
-              action="/Communication/UploadFiles"
-              :show-file-list="false"
-              :on-success="handleAvatarSuccess"
-            >
+            <el-upload class="avatar-uploader" action="/Communication/UploadFiles" :show-file-list="false" :on-success="handleAvatarSuccess">
               <i class="el-icon-circle-plus-outline"></i>
             </el-upload>
-              <el-button type="success" @click="end()">结束</el-button>
+            <el-button type="success" @click="end()">结束</el-button>
           </div>
         </el-main>
       </el-container>
@@ -164,10 +103,12 @@
 </template>
 
 <script>
-import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession} from "@/api/waiters";
+import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession,getreceid} from "@/api/waiters";
 export default {
   data() {
     return {
+      receptionId:'', // 这个参数不用理会历史那边需要传这边赋空值就好
+      receid:'', // 接待id
       types_user: "0",
       searchid: "",
       id: "", //发送方id
@@ -189,7 +130,6 @@ export default {
       more_type: false, // 加载动画的显示隐藏
       more_show: false, // 加载的隐藏显示（当数据不足分页的时候隐藏加载提示）
       total: 0, // 总页数
-      file: "", // 图片
       msg: "",
       quickData:[],
       quickType:0, // 侧边的快捷状态
@@ -203,142 +143,31 @@ export default {
     // 首问语
     _this.demoChatHubProxy.on("addContosoChatMessageToPage",
       function (message, type) {
-        console.log("消息内容：" + message+'状态:' +type);
         _this.msg = message;
       }
     );
-
     //显示新用户加入消息
     _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type) {
-      console.log(id+userName+type);
-      if (type == 1) {
-        console.log("你的名字" + userName + "你的id:" + id);
-        let data = {
-          CustomerName: userName,
-          CustomerId: id,
-          UserName: _this.name,
-          UserId: _this.id,
-          Time: new Date(+new Date() + 8 * 3600 * 1000)
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " "),
-          Message: _this.msg,
-        };
-        _this.chat_list.unshift(data);
-        _this.userInformationId = data.CustomerId;
-        _this.demoChatHubProxy.invoke(
-          "sendPrivateMsg",
-          _this.id,
-          _this.userInformationId,
-          _this.msg,
-          2,
-          false
-        );
-      }
+      console.log('显示新用户加入消息');
+      _this.userAddShow(id, userName, type)
     });
     //接收私聊消息
-    _this.demoChatHubProxy.on(
-      "remindMsg",
-      function (sendId, sengName, message, img) {
-        console.log(
-          "发送方id：" +
-            sendId +
-            "名字:" +
-            sengName +
-            "消息内容：" +
-            message +
-            img
-        );
-        let datas = {
-          CustomerId: sendId,
-          CustomerName: sengName,
-          Message: message,
-          Types: 1,
-          CreateTime: new Date(+new Date() + 8 * 3600 * 1000)
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " "),
-          img: img,
-        };
-        _this.conversationList.push(datas);
-        // 滚动条到底
-        _this.$nextTick(() => {
-          _this.$refs.content_view.scrollTop =
-            _this.$refs.content_view.scrollHeight + 60;
-        });
-        // 侧边栏的显示
-        if (img) {
-          _this.chat_list[_this.chat_state].Message = "图片";
-          _this.chat_list[_this.chat_state].Time = new Date(
-            +new Date() + 8 * 3600 * 1000
-          )
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " ");
-        } else {
-          // 侧边栏的显示
-          _this.chat_list[_this.chat_state].Message = message;
-          _this.chat_list[_this.chat_state].Time = new Date(
-            +new Date() + 8 * 3600 * 1000
-          )
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " ");
-        }
+    _this.demoChatHubProxy.on("remindMsg", function (sendId, sengName, message, types,state) {
+        console.log("发送方id：" + sendId + "名字:" + sengName + "消息内容：" + message );
+        _this.receiveShow(sendId, sengName, message, types,state)
       }
     );
     //显示发送的私聊消息
     _this.demoChatHubProxy.on(
       "showMsgToPages",
-      function (sendId, sengName, message, img) {
-        console.log(sendId + sengName + message + img);
-
-        let datas = {
-          UserId: sendId,
-          UserName: sengName,
-          Message: message,
-          Types: 0,
-          CreateTime: new Date(+new Date() + 8 * 3600 * 1000)
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " "),
-          img: img,
-        };
-        _this.conversationList.push(datas);
-        // 滚动条到底
-        _this.$nextTick(() => {
-          _this.$refs.content_view.scrollTop =
-            _this.$refs.content_view.scrollHeight + 60;
-        });
-        // 侧边栏的显示
-        if (img) {
-          _this.chat_list[_this.chat_state].Message = "图片";
-          _this.chat_list[_this.chat_state].Time = new Date(
-            +new Date() + 8 * 3600 * 1000
-          )
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " ");
-        } else {
-          _this.chat_list[_this.chat_state].Message = message;
-          _this.chat_list[_this.chat_state].Time = new Date(
-            +new Date() + 8 * 3600 * 1000
-          )
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " ");
-        }
+      function (sendId, sengName, message, types, state) {
+        console.log('发送id:'+sendId +'发送名称'+ sengName + '发送内容'+ message +'状态:'+ types+'类型:'+state);
+        _this.sendShow(sendId, sengName, message, types, state);
       }
     );
-    connection
-      .start()
+    connection.start()
       .done(function () {
-        _this.$message({
-          message: "连接成功",
-          type: "success",
-        });
-        console.log(connection.id);
-        _this.demoChatHubProxy.invoke("addOnlineUser", _this.id, _this.name, 0);
+          _this.addChatUser();
       })
       .fail(function () {
         _this.$message.error("连接失败");
@@ -349,6 +178,124 @@ export default {
   },
 
   methods: {
+    //获取接待id
+    getwaiter(){
+      getreceid(this).then(res => {
+        console.log(res);
+        this.receid = res.data.data.Id;
+      })
+    },
+    // 新用户加入会话显示
+    userAddShow(id, userName, type){
+       if (type == 1) {
+        console.log("你的名字" + userName + "你的id:" + id);
+        let data = {
+          CustomerName: userName,
+          CustomerId: id,
+          UserName: this.name,
+          UserId: this.id,
+          Time: new Date(+new Date() + 8 * 3600 * 1000)
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " "),
+          Message: _this.msg,
+        };
+        this.chat_list.unshift(data);
+        this.userInformationId = data.CustomerId;
+        this.getwaiter();
+        this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0) 
+      }
+    },
+    // 发送私聊消息的展示
+    sendShow(sendId,sengName,message,types,state){
+        let datas = {
+          UserId: sendId,
+          UserName: sengName,
+          Message: message,
+          Types: types,
+          CreateTime: new Date(+new Date() + 8 * 3600 * 1000)
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " "),
+          State:state
+        };
+        this.conversationList.push(datas);
+        // 滚动条到底
+        this.$nextTick(() => {
+          this.$refs.content_view.scrollTop =
+            this.$refs.content_view.scrollHeight + 60;
+        });
+        // 侧边栏的显示
+        if (state == 1) {
+          this.chat_list[this.chat_state].Message = "图片";
+          this.chat_list[this.chat_state].Time = new Date(
+            +new Date() + 8 * 3600 * 1000
+          )
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " ");
+        } else if(state == 0) {
+          this.chat_list[this.chat_state].Message = message;
+          this.chat_list[this.chat_state].Time = new Date(
+            +new Date() + 8 * 3600 * 1000
+          )
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " ");
+        } else {
+
+        }
+    },
+    // 接收私聊消息的展示
+    receiveShow(sendId,sengName, message,types,state){
+         let datas = {
+          CustomerId: sendId,
+          CustomerName: sengName,
+          Message: message,
+          Types: types,
+          CreateTime: new Date(+new Date() + 8 * 3600 * 1000)
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " "),
+          State: state,
+        };
+        this.conversationList.push(datas);
+        // 滚动条到底
+        this.$nextTick(() => {
+          this.$refs.content_view.scrollTop =
+            this.$refs.content_view.scrollHeight + 60;
+        });
+        // 侧边栏的显示
+        if (state == 1) {
+          this.chat_list[this.chat_state].Message = "图片";
+          this.chat_list[this.chat_state].Time = new Date(
+            +new Date() + 8 * 3600 * 1000
+          )
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " ");
+        } else if (state == 0) {
+          // 侧边栏的显示
+          this.chat_list[this.chat_state].Message = message;
+          this.chat_list[this.chat_state].Time = new Date(
+            +new Date() + 8 * 3600 * 1000
+          )
+            .toJSON()
+            .substr(0, 19)
+            .replace("T", " ");
+        } else {
+
+        }
+    },
+    // 添加会话成员
+    addChatUser(){
+      this.demoChatHubProxy.invoke("addOnlineUser", this.id, this.name, 0);
+    },
+    // 发送消息 方法
+    sendMsg(receid,send,receive,msg,type,state) {
+        // 第一个参数 : 发送方id, 第二个参数 接收方id, 第三个参数 内容, 第四个参数:发送类型,第五个参数,是否是图片
+        this.demoChatHubProxy.invoke('sendPrivateMsg',receid,send,receive,msg,type,state); 
+    },
     // 左侧聊天列表的渲染
     info() {
       chatList(this).then((res) => {
@@ -362,22 +309,16 @@ export default {
           this.customer_name = this.chat_list[0].CustomerName;
           this.user_id = this.chat_list[0].UserId;
           this.userInformationId = this.chat_list[0].CustomerId;
+          this.getwaiter();
           this.userinfo();
         }
-       
       });
+      // 获取用户信息
       GetUserData(this).then((res) => {
         this.id = res.data.sendId;
         this.name = res.data.sendName;
       });
-      if (
-        this.$cookies.get("FBWTokenId") == "" ||
-        this.$cookies.get("FBWTokenId") == null
-      ) {
-        this.$router.replace("/login");
-      }
     },
-
     // 聊天详情的渲染
     userinfo() {
       conversation(this).then((res_data) => {
@@ -387,17 +328,10 @@ export default {
           this.more_show = true;
         }
         this.total = Math.ceil(res_data.data.recordsTotal / 10);
-        for (let i = 0; i < res_data.data.data.length; i++) {
-          if (res_data.data.data[i].Message.indexOf("https://files.365lawhelp.com") == -1) {
-            res_data.data.data[i].img = false;
-          } else {
-            res_data.data.data[i].img = true;
-          }
-        }
         this.conversationList = res_data.data.data;
+        // 页面滚动到最底
         this.$nextTick(() => {
-          this.$refs.content_view.scrollTop =
-            this.$refs.content_view.scrollHeight + 60;
+          this.$refs.content_view.scrollTop =  this.$refs.content_view.scrollHeight + 60;
           console.log(this.$refs.content_view.scrollTop);
         });
       });
@@ -410,6 +344,7 @@ export default {
       this.user_id = data.UserId; // 当前会话客服id
       this.userInformationId = data.CustomerId; // 选中会话的对方id
       this.userinfo();
+      this.getwaiter();
     },
     // 点击加载更多，渲染更多聊天内容
     more() {
@@ -419,15 +354,6 @@ export default {
         this.more_type = true;
         conversation(this).then((res) => {
           for (let i = 0; i < res.data.data.length; i++) {
-            if (
-              res.data.data[i].Message.indexOf(
-                "https://files.365lawhelp.com"
-              ) == -1
-            ) {
-              res.data.data[i].img = false;
-            } else {
-              res.data.data[i].img = true;
-            }
             this.conversationList.unshift(res.data.data[i]);
           }
           this.more_type = false;
@@ -441,14 +367,8 @@ export default {
     },
     // 消息发送
     sendOut() {
-      this.demoChatHubProxy.invoke(
-        "sendPrivateMsg",
-        this.id,
-        this.userInformationId,
-        this.chat_sendout,
-        0,
-        false
-      );
+      console.log(this.receid);
+      this.sendMsg(this.receid,this.id,this.userInformationId,this.chat_sendout,0,0);
       this.chat_sendout = "";
     },
     // 个人信息的展开
@@ -460,30 +380,15 @@ export default {
     },
     // 选择图片
     handleAvatarSuccess(res, file) {
-      this.file = "https://files.365lawhelp.com/" + res.data;
+      let imgUrl = "https://files.365lawhelp.com/" + res.data;
       this.sendBtnType = true;
-      this.demoChatHubProxy.invoke(
-        "sendPrivateMsg",
-        this.id,
-        this.userInformationId,
-        this.file,
-        0,
-        true
-      );
+      this.sendMsg(this.receid,this.id,this.userInformationId,imgUrl,0,1)
     },
     // 键盘事件
     keyDown(e) {
       if (e.ctrlKey && e.keyCode == 13) {
         //用户点击了ctrl+enter触发
-        console.log(this.chat_sendout);
-        this.demoChatHubProxy.invoke(
-          "sendPrivateMsg",
-          this.id,
-          this.userInformationId,
-          this.chat_sendout,
-          0,
-          false
-        );
+        this.sendMsg(this.receid,this.id,this.userInformationId,this.chat_sendout,0,0);
         this.chat_sendout = "";
       } else {
         //用户点击了enter触发
@@ -503,7 +408,7 @@ export default {
     },
     // 快捷发送
     sendQuick(content) {
-       this.demoChatHubProxy.invoke("sendPrivateMsg",this.id,this.userInformationId,content,0,false);
+       this.sendMsg(this.receid,this.id,this.userInformationId,content,0,0)
     },
     // 关闭快捷侧边栏
     ShutDown() {
@@ -511,8 +416,9 @@ export default {
     },
     // 结束会话
     end() {
-       this.demoChatHubProxy.invoke("sendPrivateMsg",this.id,this.userInformationId,'关闭会话',0,false);
+      this.sendMsg(this.receid,this.id,this.userInformationId,'能不能麻烦您对我的服务做出评价，万分感谢！',0,0);
       endSession(this).then(res => {
+        this.sendMsg(this.receid,this.id,this.userInformationId,'',0,2)
         this.info();
       })
     },
