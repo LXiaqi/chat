@@ -129,11 +129,14 @@ export default {
         _this.demoChatHubProxy = connection.createHubProxy("chatHub");  
           //接收私聊消息
          _this.demoChatHubProxy.on("remindMsg", function (sendId,sengName, message,types,state,assessId) {
+            console.log('接收私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+types+',类型state：'+state+',评价用的参数assessId'+assessId);
             _this.assessId = assessId;
             _this.receiveShow(sendId,sengName, message,types,state)
         });
              //显示发送的私聊消息
         _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,type,state){
+          console.log('接发送聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+type+',类型state：'+state);
+
            _this.sendShow(sendId,sengName,message,type,state);
        },); 
       connection
@@ -173,6 +176,7 @@ export default {
       const _this = this;
       distribution(_this).then(res => {
             _this.demoChatHubProxy.invoke("addOnlineUser", _this.send_id,_this.send_name,1);
+             console.log('分配客服之后建立会话连接--发送方id：'+_this.send_id+',发送方名字：'+_this.send_name+',发送方身份：1');
              _this.$toast.loading({
                   message: '加载中...',
                   forbidClick: false,
@@ -202,8 +206,7 @@ export default {
                     });
                 });
             }else {
-              _this.receive_id = res.data.data.UserId;
-                      
+              _this.receive_id = res.data.data.UserId;   
               _this.receid = res.data.data.Id;
             }
     },
@@ -237,6 +240,7 @@ export default {
     },
     // 发送消息 方法
     sendMsg(receid,send,receive,msg,type,state) {
+        console.log('发送消息--接待id：'+receid+',发送方id：'+send+',接收方id：'+receive+',发送内容：'+msg+',消息状态：'+type+',消息类型：'+state);
         // 第一个参数 : 发送方id, 第二个参数 接收方id, 第三个参数 内容, 第四个参数:发送类型,第五个参数,是否是图片
         this.demoChatHubProxy.invoke('sendPrivateMsg',receid,send,receive,msg,type,state); 
     },

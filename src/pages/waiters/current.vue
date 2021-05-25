@@ -174,7 +174,12 @@ export default {
     };
   },
   created() {
-   
+      // 获取用户信息
+      GetUserData(this).then((res) => {
+        this.id = res.data.sendId;
+        this.user_id = res.data.sendId;
+        this.name = res.data.sendName;
+      });
   },
   mounted() {
     this.info();
@@ -185,14 +190,17 @@ export default {
     _this.demoChatHubProxy.on("addContosoChatMessageToPage",
       function (message, type) {
         _this.msg = message;
+        console.log('获取首问语--内容：'+message+',类型type：'+type);
       }
     );
     //显示新用户加入消息
     _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type) {
+      console.log('新用户加入消息--用户id：'+id+',名字：'+userName+'，身份：'+type);
       _this.userAddShow(id, userName, type)
     });
     //接收私聊消息
     _this.demoChatHubProxy.on("remindMsg", function (sendId, sengName, message, types,state) {
+        console.log('接收私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+types+',类型state：'+state);
         _this.receiveShow(sendId, sengName, message, types,state)
       }
     );
@@ -200,6 +208,7 @@ export default {
     _this.demoChatHubProxy.on(
       "showMsgToPages",
       function (sendId, sengName, message, types, state) {
+        console.log('发送私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+types+',类型state：'+state);
         _this.sendShow(sendId, sengName, message, types, state);
       }
     );
@@ -261,10 +270,13 @@ export default {
           LabelName:[],
         };
         this.chat_list.unshift(data);
+        console.log('侧边栏实时连接之后的数据列表：');
+        console.log(this.chat_list);
         this.userInformationId = data.CustomerId;
         this.right_type = 1;
         this.more_show = false;
         getreceid(this).then(res => {
+          console.log('新用户加入消息之后重新获取一遍接待id（接口）：'+res.data.data.Id);
           this.receid = res.data.data.Id;
           this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0) 
         })
@@ -354,11 +366,12 @@ export default {
     },
     // 添加会话成员
     addChatUser(){
+      console.log('添加会话成员--发送方id：'+this.id+',发送方名字：'+this.name+',发送方身份：0');
       this.demoChatHubProxy.invoke("addOnlineUser", this.id, this.name, 0);
     },
     // 发送消息 方法
     sendMsg(receid,send,receive,msg,type,state) {
-        // 第一个参数 : 发送方id, 第二个参数 接收方id, 第三个参数 内容, 第四个参数:发送类型,第五个参数,是否是图片
+        console.log('发送消息--接待id：'+receid+',发送方id：'+send+',接收方id：'+receive+',发送内容：'+msg+',消息状态：'+type+',消息类型：'+state);
         this.demoChatHubProxy.invoke('sendPrivateMsg',receid,send,receive,msg,type,state); 
     },
     // 左侧聊天列表的渲染
@@ -367,6 +380,7 @@ export default {
         if(res.data.data.length == 0) {
           this.chat_list = [];
           this.right_type = 0;
+          this.getwaiter();
           this.userinfo();
         }else {
           this.right_type = 1;
@@ -378,12 +392,6 @@ export default {
           this.getwaiter();
           this.userinfo();
         }
-      });
-      // 获取用户信息
-      GetUserData(this).then((res) => {
-        this.id = res.data.sendId;
-        this.user_id = res.data.sendId;
-        this.name = res.data.sendName;
       });
     },
     // 聊天详情的渲染
