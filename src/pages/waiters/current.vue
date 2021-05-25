@@ -10,19 +10,39 @@
       <!-- 聊天侧边栏 -->
       <div class="chats_content_box">
         <div @click="viewDetails(item, index)" v-for="(item, index) in chat_list" :key="item.Id" class="chat_on_box" :id="chat_state == index ? 'chat_select' : ''">
-          <img class="chat_img" src="./../../assets/img/waiters/avatar_group.png" alt=""/>
+          <el-image class="chat_img" :src="item.HeadImage" alt="">
+            <div slot="error" class="image-slot">
+              <i class="el-icon-picture-outline"></i>
+            </div>
+          </el-image>
           <span class="chat_name">{{ item.CustomerName }}</span>
           <div class="chat_time">{{ item.Time }}</div>
           <div class="chat_userinfo">{{ item.Message }}</div>
+          <div class="select_label" v-if="item.LabelName.length == 0">
+             <el-tag size="mini" type="success" effect="dark" @click="selectLabel()">选择标签</el-tag>
+          </div>
+          <div v-if="item.LabelName.length != 0">
+             <el-popover class="select_label"
+                  placement="right"
+                  width="200"
+                  trigger="hover"
+                   >
+                     <div >
+                      <el-tag class="tag" v-for="lab in item.LabelName" :key="lab.index" size="mini" type="success" effect="dark" @click="selectLabel()">{{lab.label}}</el-tag>
+                    </div>
+                    <el-tag slot="reference" size="mini" type="success" effect="dark" @click="selectLabel()">查看</el-tag>
+                </el-popover>
+          
+          </div>
         </div>
       </div>
     </div>
     <!-- 聊天内容聊天详情 -->
-    <div :class="quickType == 0 ? 'chat_details' : 'chat_details2' " v-show="right_type == 1">
+    <div :class="quickType == 0 ? 'chat_details' : 'chat_details2' " v-if="right_type == 1">
       <el-container>
         <!-- 头部信息 -->
         <el-header class="chat_details_head">
-          <img class="active_img" src="./../../assets/img/waiters/avatar_group.png" alt=""/>
+          <img class="active_img" :src="head_img" alt=""/>
           <span> {{ customer_name }}</span>
           <el-button class="head_btn" @click="user_information()">...</el-button>
           <el-button class="el-icon-chat-round head_btn" @click="Fastreply()"></el-button>
@@ -30,31 +50,31 @@
         <!-- 聊天内容 -->
         <el-main style="padding: 0">
           <div class="chat_details_content" ref="content_view">
-            <span class="tips" @click="more()" v-loading="more_type" v-show="more_show" >加载更多</span>
+            <span class="tips" @click="more()" v-loading="more_type" v-if="more_show" >加载更多</span>
             <div v-for="item in conversationList" :key="item.Id" :class="item.img == false ? 'chat_my_left' : 'chat_my_left2'">
-              <div v-if="item.Types == 1">
+              <div v-if="item.Types == 1 && item.State != 2">
                 <div class="chat_details_info_box">
-                  <img src="./../../assets/img/waiters/avatar_group.png" alt="" />
+                  <img :src="item.CustomerHeadImage" alt="" />
                   <div class="chat_details_active_time">
                     <div>{{ item.CustomerName }}</div>
                     <span>{{ item.CreateTime }}</span>
                   </div>
                 </div>
-                <div class="chat_details_sentence">
-                  <span v-show="item.State == 0"> {{ item.Message }}</span>
+                <div class="chat_details_sentence" style="margin-top:18px">
+                  <span v-if="item.State == 0"> {{ item.Message }}</span>
                   <el-image class="img_chat" v-if="item.State == 1" :src="item.Message" :preview-src-list="[item.Message]" alt=""></el-image>
                 </div>
               </div>
-              <div v-if="item.Types == 0" class="chat_my_right">
+              <div v-if="item.Types == 0 || item.Types == 2" class="chat_my_right">
                 <div class="chat_details_info_box">
-                  <img src="./../../assets/img/waiters/avatar_group.png" alt=""/>
+                  <img :src="item.UserHeadImage" alt=""/>
                   <div class="chat_details_active_time">
                     <div style="text-align: left">{{ item.UserName }}</div>
                     <span>{{ item.CreateTime }}</span>
                   </div>
                 </div>
                 <div class="chat_my_right_msgbox">
-                  <span class="chat_details_sentence_s" v-show="item.State == 0"> {{ item.Message }}</span>
+                  <span class="chat_details_sentence_s" v-if="item.State == 0"> {{ item.Message }}</span>
                   <el-image class="img_chat" v-if="item.State == 1" :src="item.Message" :preview-src-list="[item.Message]" alt="" ></el-image>
                 </div>
               </div>
@@ -67,13 +87,13 @@
             <el-upload class="avatar-uploader" action="/Communication/UploadFiles" :show-file-list="false" :on-success="handleAvatarSuccess">
               <i class="el-icon-circle-plus-outline"></i>
             </el-upload>
-            <el-button type="success" @click="end()">结束</el-button>
+            <el-button type="warning" @click="end()">结束服务</el-button>
           </div>
         </el-main>
       </el-container>
     </div>
     <!-- 快捷回复 -->
-    <div class="quick" v-show="quickType == 1">
+    <div class="quick" v-if="quickType == 1">
       <div class="quickTitle">
         <span>快捷回复</span>
         <el-button class="el-icon-close" type="mini" @click="ShutDown()"></el-button>
@@ -99,14 +119,30 @@
       <div class="user_customer">客户地址：{{ customerData.Location }}</div>
       <div class="user_customer">联系方式：{{ customerData.Phone }}</div>
     </el-drawer>
+    <!-- 标签选择框 -->
+   <el-dialog  title="标签选择" :visible.sync="dialogType">
+     <el-form >
+        <el-form-item label="标签" label-width="90px">
+          <el-cascader v-model="labelval" :options="accountData"  :show-all-levels="false" clearable :props="{ multiple: true, checkStrictly: true }"></el-cascader>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogType = false">取 消</el-button>
+        <el-button type="primary" @click="labelyes()">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession,getreceid} from "@/api/waiters";
+import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession,getreceid,labelList,setLabel} from "@/api/waiters";
 export default {
   data() {
     return {
+      labelId:'',
+      accountData:[], //label 标签数据的数组
+      labelval:[],// 标签的val
+      dialogType:false, //标签选择框的显示隐藏
       receptionId:'', // 这个参数不用理会历史那边需要传这边赋空值就好
       receid:'', // 接待id
       types_user: "0",
@@ -118,6 +154,7 @@ export default {
       chatType: 0, // 聊天列表的状态 0是当前会话 1 是历史会话， 这里固定为0
       chat_state: 0, // 点击选中的状态
       customer_name: "", // 聊天详情中左上角客户名字
+      head_img:'',// 顶栏头像
       page: 1, //当前页数
       pagenum: 10, // 每页条数
       user_id: "", // 当前客服id
@@ -137,7 +174,11 @@ export default {
     };
   },
   created() {
-    const _this = this;
+   
+  },
+  mounted() {
+    this.info();
+     const _this = this;
     var connection = $.hubConnection("");
     _this.demoChatHubProxy = connection.createHubProxy("chatHub");
     // 首问语
@@ -148,12 +189,10 @@ export default {
     );
     //显示新用户加入消息
     _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type) {
-      console.log('显示新用户加入消息');
       _this.userAddShow(id, userName, type)
     });
     //接收私聊消息
     _this.demoChatHubProxy.on("remindMsg", function (sendId, sengName, message, types,state) {
-        console.log("发送方id：" + sendId + "名字:" + sengName + "消息内容：" + message );
         _this.receiveShow(sendId, sengName, message, types,state)
       }
     );
@@ -161,34 +200,54 @@ export default {
     _this.demoChatHubProxy.on(
       "showMsgToPages",
       function (sendId, sengName, message, types, state) {
-        console.log('发送id:'+sendId +'发送名称'+ sengName + '发送内容'+ message +'状态:'+ types+'类型:'+state);
         _this.sendShow(sendId, sengName, message, types, state);
       }
     );
     connection.start()
       .done(function () {
+          _this.conversationList = [];
           _this.addChatUser();
       })
       .fail(function () {
         _this.$message.error("连接失败");
       });
   },
-  mounted() {
-    this.info();
-  },
 
   methods: {
+    // 标签选择
+    selectLabel(){
+      labelList(this).then(res => {
+        this.accountData = res.data.data;
+        this.dialogType = true;
+      })
+    },
+ 
+    // 标签提交
+    labelyes() {
+      let labelArr = this.labelval; 
+      let arr = []
+      for(let i = 0; i < labelArr.length; i++){
+        for(let j = 0; j < labelArr[i].length;j++){
+            arr.push(labelArr[i][j])
+        }
+      }
+      let arr2 = Array.from(new Set(arr));
+      this.labelId = arr2.join(",");
+      setLabel(this).then(res => {
+        this.labelval = [];
+        this.dialogType = false;
+        this.info();
+      });
+    },
     //获取接待id
     getwaiter(){
       getreceid(this).then(res => {
-        console.log(res);
         this.receid = res.data.data.Id;
       })
     },
     // 新用户加入会话显示
     userAddShow(id, userName, type){
        if (type == 1) {
-        console.log("你的名字" + userName + "你的id:" + id);
         let data = {
           CustomerName: userName,
           CustomerId: id,
@@ -198,12 +257,18 @@ export default {
             .toJSON()
             .substr(0, 19)
             .replace("T", " "),
-          Message: _this.msg,
+          Message: this.msg,
+          LabelName:[],
         };
         this.chat_list.unshift(data);
         this.userInformationId = data.CustomerId;
-        this.getwaiter();
-        this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0) 
+        this.right_type = 1;
+        this.more_show = false;
+        getreceid(this).then(res => {
+          this.receid = res.data.data.Id;
+          this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0) 
+        })
+        
       }
     },
     // 发送私聊消息的展示
@@ -307,6 +372,7 @@ export default {
           this.right_type = 1;
           this.chat_list = res.data.data;
           this.customer_name = this.chat_list[0].CustomerName;
+          this.head_img = this.chat_list[0].HeadImage;
           this.user_id = this.chat_list[0].UserId;
           this.userInformationId = this.chat_list[0].CustomerId;
           this.getwaiter();
@@ -316,6 +382,7 @@ export default {
       // 获取用户信息
       GetUserData(this).then((res) => {
         this.id = res.data.sendId;
+        this.user_id = res.data.sendId;
         this.name = res.data.sendName;
       });
     },
@@ -332,7 +399,6 @@ export default {
         // 页面滚动到最底
         this.$nextTick(() => {
           this.$refs.content_view.scrollTop =  this.$refs.content_view.scrollHeight + 60;
-          console.log(this.$refs.content_view.scrollTop);
         });
       });
     },
@@ -341,6 +407,7 @@ export default {
       this.page = 1; //还原
       this.chat_state = index; // 选中下标改变状态来更改样式
       this.customer_name = data.CustomerName; // 选中聊天的对方名字
+      this.head_img = data.HeadImage;
       this.user_id = data.UserId; // 当前会话客服id
       this.userInformationId = data.CustomerId; // 选中会话的对方id
       this.userinfo();
@@ -349,7 +416,6 @@ export default {
     // 点击加载更多，渲染更多聊天内容
     more() {
       this.page++;
-      console.log(this.total);
       if (this.page <= this.total) {
         this.more_type = true;
         conversation(this).then((res) => {
@@ -363,11 +429,9 @@ export default {
         this.more_show = false;
       }
 
-      console.log(this.page);
     },
     // 消息发送
     sendOut() {
-      console.log(this.receid);
       this.sendMsg(this.receid,this.id,this.userInformationId,this.chat_sendout,0,0);
       this.chat_sendout = "";
     },
@@ -402,7 +466,6 @@ export default {
     Fastreply() {
       this.quickType = 1;
       quickList(this).then((res) => {
-        console.log(res);
         this.quickData = res.data.data;
       });
     },
@@ -500,6 +563,14 @@ export default {
   left: 80px;
   top: 46px;
 }
+.select_label {
+  position: absolute;
+  bottom: 10px;
+  right: 24px;
+}
+.tag {
+  margin: 2px;
+}
 /* 聊天内容聊天详情 */
 .chat_details {
   width: 1449px;
@@ -543,13 +614,13 @@ export default {
 }
 /* 聊天细节 */
 .chat_details_info_box img {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
 }
 .chat_details_active_time {
   display: inline-block;
-  vertical-align: middle;
+  vertical-align: top;
   margin-left: 18px;
 }
 .chat_details_active_time span {
@@ -601,6 +672,7 @@ export default {
 }
 .img_chat {
   width: 300px;
+  height: 300px;
 }
 .avatar-uploader {
   display: inline-block;
@@ -621,5 +693,8 @@ export default {
 }
 .el-icon-close {
   margin-left: 30px;
+}
+.el-icon-picture-outline {
+  font-size: 40px;
 }
 </style>

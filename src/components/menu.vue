@@ -1,7 +1,7 @@
 <template>
   <div class="service">
     <el-container>
-    <el-aside width="120px">
+    <!-- <el-aside width="120px">
          <div class="service_left">
       <div class="el-icon-chat-line-round"></div>
       <div class="menu_list">
@@ -10,8 +10,12 @@
                  <div :class="item.icon" @click="menu_to(item.id)" :id="type == item.id ? 'active' :'' " ></div>
             </router-link>
         </el-tooltip>
-
-        <div class="my_active_box " @click="setUserType()" >
+        <el-popover
+          placement="right"
+          width="120"
+          trigger="click">
+          <div @click="out_type(item.type)"  v-for="item in outList" :key="item.type" class="usertype">{{item.val}}</div>
+          <div class="my_active_box " @click="setUserType()" slot="reference">
           <div class="user_active_">
              <el-tooltip  effect="light" :content="userinfos.sendName" placement="right"  >
                <img src="./../assets/img/waiters/avatar_group.png" alt="">
@@ -19,13 +23,14 @@
           </div>
            <div :class="userinfos.statuz == 1 ? 'green' : (userinfos.statuz == 2 ? 'red' : 'yellow') "></div>
         </div>
+        </el-popover>
+        
       </div>
     </div>
     <div class="user_out" v-show="mystate == 1 ">
-      <div @click="out_type(item.type)"  v-for="item in outList" :key="item.type">{{item.val}}</div>
-    
+ 
     </div>
-    </el-aside>
+    </el-aside> -->
     <el-container>
     <el-main style="padding:0">
          <router-view></router-view>　　
@@ -229,5 +234,9 @@ computed: {
     padding: 20px;
     line-height: 28px;
     border-radius: 8px;
+}
+.usertype {
+  line-height: 28px;
+  text-align: center;
 }
 </style>

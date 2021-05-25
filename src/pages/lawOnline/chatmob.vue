@@ -44,7 +44,7 @@
             <van-button :disabled="item.btntype" class="submit_btn_s" type="primary" size="small" @click="submit()">{{item.btntype ?'已评价' :'评价'}}</van-button>
           </div>
         </div>
-        <div v-if="item.Types == 1" class="chat_mob_right">
+        <div v-if="item.Types == 1 && item.State != 2" class="chat_mob_right">
             <div class="chat_details_info_box">
                <span class="chat_details_sentence_s" v-show="item.State == 0">
                     {{item.Message}}
@@ -80,9 +80,10 @@ import { ImagePreview } from 'vant';
 export default {
   data() {
     return {
+      assessId:'',// 评价id（评价的时候需要传给服务端）
       receid:'', // 接待id
       types_user:'1', // 分辨和服还是客户
-      searchid:'1601',
+      searchid:'',
       value:'',//输入框内容
       send_name:'', //发送方名字
       send_id:'', //发送方id
@@ -104,7 +105,8 @@ export default {
     }
   },
   created() {
-      
+      console.log('客户端地址栏传的ID：'+this.$route.query.id);
+      this.searchid = this.$route.query.id
   },
   watch:{
     value:function(newV,oldV){
@@ -126,13 +128,12 @@ export default {
         var connection = $.hubConnection("");
         _this.demoChatHubProxy = connection.createHubProxy("chatHub");  
           //接收私聊消息
-         _this.demoChatHubProxy.on("remindMsg", function (sendId,sengName, message,types,state) {
-            console.log('接收私聊消息发送方id：'+sendId+'接收方id:'+sengName+'消息内容：' + message);
+         _this.demoChatHubProxy.on("remindMsg", function (sendId,sengName, message,types,state,assessId) {
+            _this.assessId = assessId;
             _this.receiveShow(sendId,sengName, message,types,state)
         });
              //显示发送的私聊消息
         _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,type,state){
-           console.log('显示发送的私聊消息:'+sendId+ '发送方名字:'+sengName+'内容:'+message);
            _this.sendShow(sendId,sengName,message,type,state);
        },); 
       connection
@@ -159,19 +160,19 @@ export default {
     },
     // 评价提交
     submit() {
-      AddEvalua(this).then(res => {
-        console.log(res);
-        this.info();
-      })
+      let varmsg = this.data_item.Satisfaction+'##'+this.data_item.Message;
+      if(this.assessId != '' && this.assessId != null){
+        AddEvalua(this).then(res => {
+          this.sendMsg(this.receid,this.send_id,this.receive_id,varmsg,1,2);
+          this.info();
+        })
+      }
     },
-
     // 分配客服id
     distributionId(){
       const _this = this;
       distribution(_this).then(res => {
-            _this.receid = res.data.data.Id;
             _this.demoChatHubProxy.invoke("addOnlineUser", _this.send_id,_this.send_name,1);
-            console.log('加入会话成功');
              _this.$toast.loading({
                   message: '加载中...',
                   forbidClick: false,
@@ -184,7 +185,6 @@ export default {
     leave(res){
        const _this = this;
        if(res.data.result == 9){
-              console.log('不在线');
                 _this.demoChatHubProxy.invoke("GetGeegtingData");
                 _this.demoChatHubProxy.on("greetingsMessageToPage",function(content){
                   _this.sendMsg(_this.receid,'00000000-0000-0000-0000-000000000000',_this.send_id,content,'2',0);
@@ -203,6 +203,8 @@ export default {
                 });
             }else {
               _this.receive_id = res.data.data.UserId;
+                      
+              _this.receid = res.data.data.Id;
             }
     },
     // 发送私聊消息的展示
@@ -215,7 +217,9 @@ export default {
         State:state
       }
       this.chatList.push(data);
-      this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+      this.$nextTick(() => {
+         this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+      })
     },
     // 接收私聊消息的展示
     receiveShow(sendId,sengName, message,types,state){
@@ -227,7 +231,9 @@ export default {
           State:state
         }
       this.chatList.push(data)
-      this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+      this.$nextTick(() => {
+         this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+      })
     },
     // 发送消息 方法
     sendMsg(receid,send,receive,msg,type,state) {
@@ -239,8 +245,8 @@ export default {
 
     },
     info() {
-      GetUserData(this).then(res => {
-        // console.log(res);
+      if(this.searchid != '' && this.searchid != null) {
+        GetUserData(this).then(res => {
         this.send_name = res.data.sendName
         this.send_id = res.data.sendId;
         const that = this;
@@ -259,10 +265,16 @@ export default {
                 data.data.data[i].btntype = true;
             }
           }
-           console.log( data.data.data);
           that.chatList = data.data.data;
+          that.$nextTick(() => {
+            that.$refs.content_view_m.scrollTop = that.$refs.content_view_m.scrollHeight
+          })
         })
       })
+      }else {
+        this.$toast.fail('登录失效');
+      }
+
     },
     // 加载更多
     more(){
@@ -288,7 +300,6 @@ export default {
     },
     //发送
     send() {
-      console.log('发送id：'+this.send_id+',接收id：'+this.receive_id);
       this.sendMsg(this.receid,this.send_id,this.receive_id,this.value,1,0)
       this.value = '';
     },
@@ -408,6 +419,7 @@ export default {
 }
 .chatimg_s {
   width: 130px;
+  height: 100px;
   vertical-align: top;
 }
 .chat_details_sentence_s {

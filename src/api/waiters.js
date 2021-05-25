@@ -28,7 +28,7 @@ export async function getCustomerInfo(that) {
 }
 // 获取用户登录信息
 export async function GetUserData(that) {
-    const res = await that.$http.get('/Communication/GetUserData?custId='+that.searchid+'&types='+that.types_user);
+    const res = await that.$http.get('/Communication/GetUserData?custId='+that.searchid);
     if(res.data.success == false) {
         that.$message.error(res.data.msg);
     }else {
@@ -78,6 +78,21 @@ export async function getreceid(that) {
     if(res.data.success == false) {
         return res;
     }else {
+       return res;
+    }
+}
+// 标签选择
+export async function labelList(that) {
+    const res = await that.$http.get('/Label/GetThreeLabelTree');
+    return res;
+}
+// 标签提交
+export async function setLabel(that) {
+    const res = await that.$http.get('/Label/SetReceLabel?receId='+that.receid+'&labelIds='+that.labelId);
+    if(res.data.success == false) {
+        that.$message.error(res.data.msg);
+    }else {
+        that.$message.success(res.data.msg);
        return res;
     }
 }
