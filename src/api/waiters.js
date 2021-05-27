@@ -96,3 +96,12 @@ export async function setLabel(that) {
        return res;
     }
 }
+// 移除会话
+export async function DeleteCon(that) {
+    const res = await that.$http.get('/Reception/DeleteCon?customerId='+that.send_id);
+    if(res.data.success == false) {
+        that.$message.error(res.data.msg);
+    }else {
+       return res;
+    }
+}

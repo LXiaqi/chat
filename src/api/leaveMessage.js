@@ -1,6 +1,13 @@
 // 留言
 export async function sendMessage(that) {
-    const res = await that.$http.get('/MessageOrder/AddMsg?customerId='+that.id+'&msg='+that.msg+'&phone ='+that.phone+'&remarks='+that.details);
+    let data = {
+        customerId:that.id,
+        msg:that.msg,
+        phone:that.phone,
+        remarks:that.details,
+        images:that.imgs
+    }
+    const res = await that.$http.post('/MessageOrder/AddMsg',data);
     if(res.data.success == false) {
         that.$toast.fail(res.data.msg);
     }else {

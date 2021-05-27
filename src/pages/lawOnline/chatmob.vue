@@ -13,6 +13,7 @@
         <span v-show="more_show" @click="more()">加载更多</span>
         <van-loading v-show="!more_show" color="#1989fa" size="18" />
       </div>
+      <div class="systemTips" v-if="nametips!='' ">客服{{nametips}}为您服务</div>
       <div v-for="(item,index) in chatList" :key="index" class="chat_mob">
         <div v-if="(item.Types == 0 || item.Types == 2) && item.State != 2" class="chat_mob_left">
             <div class="chat_details_info_box">
@@ -63,7 +64,7 @@
     <div class="img_box" v-show="bottom_type" safe-area-inset-bottom>
       <el-upload
           class="avatar-uploader"
-          action="/Communication/UploadFiles"
+          action="/BasicData/UploadFiles"
           :show-file-list="false"
           :on-success="handleAvatarSuccess">
           <img src="../../assets/img/chatmob/img_file.png" alt="" >
@@ -73,13 +74,15 @@
 </template>
 
 <script>
-import { GetUserData,distribution,chatHistoryMob } from "@/api/waiters";
+import { GetUserData,distribution,chatHistoryMob,DeleteCon } from "@/api/waiters";
 import { AddEvalua, } from "@/api/leaveMessage";
 
 import { ImagePreview } from 'vant';
 export default {
   data() {
     return {
+      nametips:'', // 客服名字
+      allotType:false, //全局状态，当客服那边结束会话之后 如果客户还有问题需要重新分配客服信息（这种时候分配的客服信息还是之前的那个客服）
       assessId:'',// 评价id（评价的时候需要传给服务端）
       receid:'', // 接待id
       types_user:'1', // 分辨和服还是客户
@@ -136,13 +139,16 @@ export default {
              //显示发送的私聊消息
         _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,type,state){
           console.log('接发送聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+type+',类型state：'+state);
-
            _this.sendShow(sendId,sengName,message,type,state);
        },); 
+          //显示新用户加入消息
+        _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type, state) {
+          console.log('新用户加入消息--用户id：'+id+',名字：'+userName+'，身份：'+type);
+        });
       connection
         .start()
         .done(function () {
-           _this.distributionId();
+           _this.distributionId(false,0,'');
         })
         .fail(function () {
           _this.$toast.fail('连接失败');
@@ -165,50 +171,73 @@ export default {
     submit() {
       let varmsg = this.data_item.Satisfaction+'##'+this.data_item.Message;
       if(this.assessId != '' && this.assessId != null){
-        AddEvalua(this).then(res => {
-          this.sendMsg(this.receid,this.send_id,this.receive_id,varmsg,1,2);
-          this.info();
-        })
+        if(this.data_item.Satisfaction == '' || this.data_item.Message == ''){
+          _this.$toast.fail('请输入评价内容');
+        }else {
+           AddEvalua(this).then(res => {
+            this.sendMsg(this.receid,this.send_id,this.receive_id,varmsg,1,2);
+            this.info();
+          })
+        }
+       
       }
     },
     // 分配客服id
-    distributionId(){
+    distributionId(typ,state,img){
       const _this = this;
       distribution(_this).then(res => {
-            _this.demoChatHubProxy.invoke("addOnlineUser", _this.send_id,_this.send_name,1);
-             console.log('分配客服之后建立会话连接--发送方id：'+_this.send_id+',发送方名字：'+_this.send_name+',发送方身份：1');
+        console.log(res);
+        _this.$nextTick(() => {
+         _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
+        })
+        if(res.data.result != 9) {
+           _this.demoChatHubProxy.invoke("addOnlineUser",res.data.data.UserId,_this.send_id,_this.send_name,1,_this.allotType);
+             console.log('分配客服之后建立会话连接--发送方id：'+_this.send_id+',发送方名字：'+_this.send_name+',发送方身份：1,分配的客服id：'+res.data.data.UserId+',判断是否是第二次重连：'+_this.allotType);
              _this.$toast.loading({
                   message: '加载中...',
                   forbidClick: false,
-                });
-              _this.$toast('连接成功');
-            _this.leave(res);
-          })
+            });
+             _this.receive_id = res.data.data.UserId;   
+              _this.receid = res.data.data.Id;
+              _this.nametips =  res.data.data.UserName;
+              if(typ == true) {
+                  if(state == 0){
+                     _this.sendMsg(_this.receid,_this.send_id,_this.receive_id,_this.value,1,0);
+                     _this.value = '';
+                  }
+                  if(state == 1) {
+                      _this.sendMsg(_this.receid,_this.send_id,_this.receive_id,img,1,1)
+                  }
+                }
+              if(_this.allotType == true) {
+                _this.allotType = false;
+              }
+        }else {
+           _this.leave();
+        }
+              // _this.$toast('连接成功');
+      })
     },
     // 客服均不在线的时候留言操作
-    leave(res){
+    leave(){
        const _this = this;
-       if(res.data.result == 9){
-                _this.demoChatHubProxy.invoke("GetGeegtingData");
-                _this.demoChatHubProxy.on("greetingsMessageToPage",function(content){
-                  _this.sendMsg(_this.receid,'00000000-0000-0000-0000-000000000000',_this.send_id,content,'2',0);
-                  _this.$dialog.alert({
-                      title: '提示',
-                      message: '客服均不在线.请前往留言',
-                      theme: 'round-button',
-                    }).then(() => {
-                        _this.$router.push({
-                          name: 'leaveMessage',
-                          query: {
-                              id: _this.send_id
-                            }
-                        });
-                    });
+        _this.demoChatHubProxy.invoke("GetGeegtingData");
+        _this.demoChatHubProxy.on("greetingsMessageToPage",function(content){
+          _this.sendMsg(_this.receid,'00000000-0000-0000-0000-000000000000',_this.send_id,content,'2',0);
+          _this.$dialog.alert({
+              title: '提示',
+              message: '客服均不在线.请前往留言',
+              theme: 'round-button',
+            }).then(() => {
+                _this.$router.push({
+                  name: 'leaveMessage',
+                  query: {
+                      id: _this.send_id
+                    }
                 });
-            }else {
-              _this.receive_id = res.data.data.UserId;   
-              _this.receid = res.data.data.Id;
-            }
+            });
+        });
+            
     },
     // 发送私聊消息的展示
     sendShow(sendId,sengName,message,type,state){
@@ -237,12 +266,20 @@ export default {
       this.$nextTick(() => {
          this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
       })
+      if(state == 2){
+        this.allotType = true;
+      }
     },
     // 发送消息 方法
     sendMsg(receid,send,receive,msg,type,state) {
         console.log('发送消息--接待id：'+receid+',发送方id：'+send+',接收方id：'+receive+',发送内容：'+msg+',消息状态：'+type+',消息类型：'+state);
-        // 第一个参数 : 发送方id, 第二个参数 接收方id, 第三个参数 内容, 第四个参数:发送类型,第五个参数,是否是图片
+        
+          this.$nextTick(() => {
+                this.$refs.content_view_m.scrollTop = this.$refs.content_view_m.scrollHeight
+          })
+         // 第一个参数 : 发送方id, 第二个参数 接收方id, 第三个参数 内容, 第四个参数:发送类型,第五个参数,是否是图片
         this.demoChatHubProxy.invoke('sendPrivateMsg',receid,send,receive,msg,type,state); 
+       
     },
     // 返回
     onClickLeft() {
@@ -304,8 +341,19 @@ export default {
     },
     //发送
     send() {
-      this.sendMsg(this.receid,this.send_id,this.receive_id,this.value,1,0)
-      this.value = '';
+      const that = this;
+      if(this.allotType == true) {
+          DeleteCon(this).then(res => {
+            console.log('删除会话');
+             that.distributionId(true,0,'');
+          })
+         
+        }else {
+           this.sendMsg(this.receid,this.send_id,this.receive_id,this.value,1,0);
+           this.value = '';
+        }
+  
+     
     },
     //底栏状态切换
     add_img() {
@@ -320,7 +368,17 @@ export default {
     handleAvatarSuccess(res,file) {
       let imgUrl ='https://files.365lawhelp.com/'+res.data;
       this.sendBtnType = true;
-      this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
+       const that = this;
+      if(this.allotType == true) {
+          DeleteCon(this).then(res => {
+            console.log('删除会话');
+             that.distributionId(true,1,imgUrl);
+          })
+          
+        }else {
+          this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
+        }
+
         this.bottom_type = false;
         this.sendBtnType = false;
     },
@@ -465,5 +523,12 @@ export default {
 }
 .submit_btn_s {
   width: 80px;
+}
+.systemTips {
+  font-size: 12px;
+  text-align: center;
+  display: block;
+  color: #ccc;
+  padding: 10px 0;
 }
 </style>

@@ -37,6 +37,7 @@ export default {
         phone:'', // 手机号
         details:'', //详情
         id:'',
+        imgs:[],
     }
   },
   created() {
@@ -51,12 +52,22 @@ export default {
     },
     // 确定
     submitMsg() {
-        sendMessage(this).then(res => {
-            console.log(res);
-            this.details = '';
-            this.phone = '';
-            this.msg = '';
-        })
+        if(this.msg == '') {
+           this.$toast.fail('内容不能为空');
+        }else{
+          if(!(/^1[3|4|5|8][0-9]\d{4,8}$/.test(this.phone))){
+             this.$toast.fail('手机号码有误请重新输入');
+          }else{
+            sendMessage(this).then(res => {
+              console.log(res);
+              this.details = '';
+              this.phone = '';
+              this.msg = '';
+            })
+          }
+        }
+         
+        
     }
   },
 };

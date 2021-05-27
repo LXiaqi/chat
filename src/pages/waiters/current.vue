@@ -15,11 +15,12 @@
               <i class="el-icon-picture-outline"></i>
             </div>
           </el-image>
+          <span class="chat_tips" v-if="item.tips"></span>
           <span class="chat_name">{{ item.CustomerName }}</span>
           <div class="chat_time">{{ item.Time }}</div>
           <div class="chat_userinfo">{{ item.Message }}</div>
           <div class="select_label" v-if="item.LabelName.length == 0">
-             <el-tag size="mini" type="success" effect="dark" @click="selectLabel()">选择标签</el-tag>
+             <el-tag size="mini" type="success" effect="dark" @click="selectLabel(item.LabelName)">选择标签</el-tag>
           </div>
           <div v-if="item.LabelName.length != 0">
              <el-popover class="select_label"
@@ -28,9 +29,9 @@
                   trigger="hover"
                    >
                      <div >
-                      <el-tag class="tag" v-for="lab in item.LabelName" :key="lab.index" size="mini" type="success" effect="dark" @click="selectLabel()">{{lab.label}}</el-tag>
+                      <el-tag class="tag" v-for="lab in item.LabelName" :key="lab.index" size="mini" type="success" effect="dark" @click="selectLabel(item.LabelName)">{{lab.label}}</el-tag>
                     </div>
-                    <el-tag slot="reference" size="mini" type="success" effect="dark" @click="selectLabel()">查看</el-tag>
+                    <el-tag slot="reference" size="mini" type="success" effect="dark" @click="selectLabel(item.LabelName)">查看</el-tag>
                 </el-popover>
           
           </div>
@@ -84,7 +85,7 @@
           <div class="chat_sendout_box">
             <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="chat_sendout" class="chat_sendout_ipt" @keydown.enter.native="keyDown"></el-input>
             <el-button type="primary" @click="sendOut()">发送</el-button>
-            <el-upload class="avatar-uploader" action="/Communication/UploadFiles" :show-file-list="false" :on-success="handleAvatarSuccess">
+            <el-upload class="avatar-uploader" action="/BasicData/UploadFiles" :show-file-list="false" :on-success="handleAvatarSuccess">
               <i class="el-icon-circle-plus-outline"></i>
             </el-upload>
             <el-button type="warning" @click="end()">结束服务</el-button>
@@ -133,9 +134,10 @@
     </el-dialog>
   </div>
 </template>
-
 <script>
 import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession,getreceid,labelList,setLabel} from "@/api/waiters";
+import {logout} from "@/api/login";
+
 export default {
   data() {
     return {
@@ -180,8 +182,29 @@ export default {
         this.user_id = res.data.sendId;
         this.name = res.data.sendName;
       });
+
   },
   mounted() {
+      // let that = this
+      //   let beginTime = 0; //开始时间
+      //   let differTime = 0; //时间差
+      //   window.onunload = function () {
+      //     differTime = new Date().getTime() - beginTime;
+      //     if (differTime <= 5) {
+      //       console.log("这是关闭");
+      //       logout(that).then(res => {
+      //           that.$router.replace("/login");
+      //       })
+      //     } else {
+      //       console.log("这是刷新");
+      //     }
+      //   };
+
+      //   window.onbeforeunload = function (e) {
+      //      e.returnValue = '关闭提示';  
+      //     beginTime = new Date().getTime();
+      //   };
+
     this.info();
      const _this = this;
     var connection = $.hubConnection("");
@@ -194,9 +217,9 @@ export default {
       }
     );
     //显示新用户加入消息
-    _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type) {
-      console.log('新用户加入消息--用户id：'+id+',名字：'+userName+'，身份：'+type);
-      _this.userAddShow(id, userName, type)
+    _this.demoChatHubProxy.on("showJoinMessage", function (id, userName, type,state) {
+      console.log('新用户加入消息--用户id：'+id+',名字：'+userName+'，身份：'+type+',是否是第二次：'+state);
+      _this.userAddShow(id, userName, type,state)
     });
     //接收私聊消息
     _this.demoChatHubProxy.on("remindMsg", function (sendId, sengName, message, types,state) {
@@ -212,41 +235,96 @@ export default {
         _this.sendShow(sendId, sengName, message, types, state);
       }
     );
+  
+      connection.error((error)=>{
+        console.log(error)
+      })  
+      connection.disconnected(()=>{
+          console.log('断线')
+        connection.start();
+      })
+
     connection.start()
       .done(function () {
-          _this.conversationList = [];
+          // _this.conversationList = [];
           _this.addChatUser();
       })
       .fail(function () {
         _this.$message.error("连接失败");
       });
   },
-
+ 
   methods: {
     // 标签选择
-    selectLabel(){
+    selectLabel(item){
       labelList(this).then(res => {
-        this.accountData = res.data.data;
         this.dialogType = true;
+        let lab1 = [];
+        // 循环之前选中的标签id
+        for(let i = 0; i < item.length; i++){
+          // 如果拥有父级id
+          if(item[i].pid != null) {
+            // 循环 标签状态树的第一级
+            for(let j = 0; j < res.data.data.length; j++){
+              // 如果该状态树的一级的子集有值
+              if(res.data.data[j].children.length != 0){
+                // 循环 二级状态树
+                 for(let k = 0; k < res.data.data[j].children.length;k++){
+                   // 如果之前选中的标签id的父id 等于 二级状态树下的id，就把该二级状态树的父id，添加到数组
+                    if(item[i].pid == res.data.data[j].children[k].value){
+                       lab1.push([res.data.data[j].children[k].pId,item[i].pid,item[i].value]);
+                    }else {
+                      // 否则就说明是一级，不需要操作， 直接添加改数据的pid 和value
+                       lab1.push([item[i].pid,item[i].value]);
+                    }
+                }
+              }
+            }
+          }else {
+            lab1.push([item[i].value]);
+          }
+        }
+        this.labelval = lab1;
+        this.accountData = res.data.data;
       })
     },
- 
+
     // 标签提交
     labelyes() {
+      let labelType = true;
       let labelArr = this.labelval; 
       let arr = []
       for(let i = 0; i < labelArr.length; i++){
-        for(let j = 0; j < labelArr[i].length;j++){
-            arr.push(labelArr[i][j])
+          arr.push(labelArr[i][labelArr[i].length-1])
+      }
+      // 数组去重
+      // let arr = Array.from(new Set(arr));
+      for(let j = 0; j < arr.length; j++){
+        for(let k = 0; k < this.accountData.length; k++){
+          if(this.accountData[k].children.length != 0) {
+              if(arr[j] == this.accountData[k].value) {
+                  labelType = false;
+              }
+            }
+          for(let t = 0; t < this.accountData[k].children.length;t++){
+            if(this.accountData[k].children[t].children.length != 0) {
+              if(arr[j] == this.accountData[k].children[t].value) {
+                  labelType = false;
+              }
+            }
+          }
         }
       }
-      let arr2 = Array.from(new Set(arr));
-      this.labelId = arr2.join(",");
-      setLabel(this).then(res => {
-        this.labelval = [];
-        this.dialogType = false;
-        this.info();
-      });
+      if(labelType == true && arr.length != 0) {
+         this.labelId = arr.join(",");
+        setLabel(this).then(res => {
+            this.labelval = [];
+            this.dialogType = false;
+            this.info();
+          });
+      }else {
+        this.$message.error('必须选择当前标签的最后一级作为选中对象');
+      }
     },
     //获取接待id
     getwaiter(){
@@ -255,8 +333,7 @@ export default {
       })
     },
     // 新用户加入会话显示
-    userAddShow(id, userName, type){
-       if (type == 1) {
+    userAddShow(id, userName, type,state){
         let data = {
           CustomerName: userName,
           CustomerId: id,
@@ -268,20 +345,24 @@ export default {
             .replace("T", " "),
           Message: this.msg,
           LabelName:[],
+          tips:true
         };
         this.chat_list.unshift(data);
         console.log('侧边栏实时连接之后的数据列表：');
         console.log(this.chat_list);
-        this.userInformationId = data.CustomerId;
+        this.userInformationId = id;
         this.right_type = 1;
         this.more_show = false;
+        this.$message.success('客户'+userName+'加入会话');
         getreceid(this).then(res => {
           console.log('新用户加入消息之后重新获取一遍接待id（接口）：'+res.data.data.Id);
           this.receid = res.data.data.Id;
-          this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0) 
+          if(state == false) {
+             this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0);
+          }
+         
+          this.info(); 
         })
-        
-      }
     },
     // 发送私聊消息的展示
     sendShow(sendId,sengName,message,types,state){
@@ -325,7 +406,10 @@ export default {
     },
     // 接收私聊消息的展示
     receiveShow(sendId,sengName, message,types,state){
-         let datas = {
+      console.log('发送方id：'+sendId);
+      console.log('当前选中的id：'+this.userInformationId);
+      if(sendId == this.userInformationId) {
+        let datas = {
           CustomerId: sendId,
           CustomerName: sengName,
           Message: message,
@@ -337,37 +421,45 @@ export default {
           State: state,
         };
         this.conversationList.push(datas);
+      }
         // 滚动条到底
         this.$nextTick(() => {
           this.$refs.content_view.scrollTop =
             this.$refs.content_view.scrollHeight + 60;
         });
         // 侧边栏的显示
-        if (state == 1) {
-          this.chat_list[this.chat_state].Message = "图片";
-          this.chat_list[this.chat_state].Time = new Date(
-            +new Date() + 8 * 3600 * 1000
-          )
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " ");
-        } else if (state == 0) {
-          // 侧边栏的显示
-          this.chat_list[this.chat_state].Message = message;
-          this.chat_list[this.chat_state].Time = new Date(
-            +new Date() + 8 * 3600 * 1000
-          )
-            .toJSON()
-            .substr(0, 19)
-            .replace("T", " ");
-        } else {
+        for(let i = 0; i < this.chat_list.length;i++){
+          if(sendId == this.chat_list[i].CustomerId) {
+            if (state == 1) {
+              this.chat_list[i].tips = true;
+              this.chat_list[i].Message = "图片";
+              this.chat_list[i].Time = new Date(
+                +new Date() + 8 * 3600 * 1000
+              )
+                .toJSON()
+                .substr(0, 19)
+                .replace("T", " ");
+            } else if (state == 0) {
+              // 侧边栏的显示
+              this.chat_list[i].tips = true;
+              this.chat_list[i].Message = message;
+              this.chat_list[i].Time = new Date(
+                +new Date() + 8 * 3600 * 1000
+              )
+                .toJSON()
+                .substr(0, 19)
+                .replace("T", " ");
+            } else {
 
+              }
+        }
+        
         }
     },
     // 添加会话成员
     addChatUser(){
       console.log('添加会话成员--发送方id：'+this.id+',发送方名字：'+this.name+',发送方身份：0');
-      this.demoChatHubProxy.invoke("addOnlineUser", this.id, this.name, 0);
+      this.demoChatHubProxy.invoke("addOnlineUser",'', this.id, this.name, 0,false);
     },
     // 发送消息 方法
     sendMsg(receid,send,receive,msg,type,state) {
@@ -380,7 +472,6 @@ export default {
         if(res.data.data.length == 0) {
           this.chat_list = [];
           this.right_type = 0;
-          this.getwaiter();
           this.userinfo();
         }else {
           this.right_type = 1;
@@ -418,6 +509,7 @@ export default {
       this.head_img = data.HeadImage;
       this.user_id = data.UserId; // 当前会话客服id
       this.userInformationId = data.CustomerId; // 选中会话的对方id
+      this.chat_list[index].tips = false;
       this.userinfo();
       this.getwaiter();
     },
@@ -487,13 +579,19 @@ export default {
     },
     // 结束会话
     end() {
-      this.sendMsg(this.receid,this.id,this.userInformationId,'能不能麻烦您对我的服务做出评价，万分感谢！',0,0);
-      endSession(this).then(res => {
-        this.sendMsg(this.receid,this.id,this.userInformationId,'',0,2)
-        this.info();
-      })
+      if(this.chat_list[this.chat_state].LabelName.length != 0){
+         this.sendMsg(this.receid,this.id,this.userInformationId,'能不能麻烦您对我的服务做出评价，万分感谢！',0,0);
+          endSession(this).then(res => {
+            this.sendMsg(this.receid,this.id,this.userInformationId,'',0,2)
+            this.info();
+          })
+      }else {
+           this.$message.error('标签还未选择，请选择标签后结束会话！');
+      }
+     
     },
   },
+  
 };
 </script>
 
@@ -506,6 +604,15 @@ export default {
   width: 350px;
   height: 100vh;
   border-right: 1px solid #ebebeb;
+}
+.chat_tips {
+  width: 12px;
+    height: 12px;
+    background: red;
+    border-radius: 50%;
+    position: absolute;
+    left: 57px;
+    top: 18px;
 }
 .lable {
   margin-left: 32px;
