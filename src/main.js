@@ -21,9 +21,9 @@ Vue.use(VueCookies);
 // 接口错误拦截
 Axios.interceptors.response.use(res => {
   // console.log(res);
-  if(res.data.result == 7) {
-    router.replace("/login");
-  }
+  // if(res.data.result == 7) {
+  //   router.replace("/login");
+  // }
   return res
 })
 // Vue.prototype.$http = Axios;

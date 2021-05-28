@@ -25,3 +25,12 @@ export async function AddEvalua(that) {
        return res;
     }
 }
+// 图片上传
+export async function imgup(that) {
+    const res = await that.$http.post('/BasicData/UploadFiles',that.imgList);
+    if(res.data.success == false) {
+        that.$toast.fail(res.data.msg);
+    }else {
+       return res;
+    }
+}

@@ -11,17 +11,34 @@
     <div class="chat_content">
         <div class="frombox">
             <div class="group">
-                <label for="">内容</label>
-                <van-field v-model="msg"  placeholder="请输入内容" />   
+                <label for="">问题描述</label>
+                <van-field v-model="msg"  placeholder="请输入问题" />   
             </div>
             <div class="group">
                 <label for="">联系方式</label>
                 <van-field v-model="phone" type="tel" placeholder="请输入手机号" />   
             </div>
             <div class="area_box">
-                <label for="">详情描述</label>
-                <van-field class="testarea_s" v-model="details" rows="8" type="textarea"  placeholder="请输入内容" />   
+                <label for="">补充内容</label>
+                <van-field class="testarea_s" v-model="details" rows="8" type="textarea"  placeholder="请输入要补充的内容" />   
             </div>
+            <div class="area_box">
+                <label for="">上传图片</label>
+                 <!-- <el-upload
+                      multiple
+                      class="uploader_box"
+                      list-type="picture-card"
+                      action="/BasicData/UploadFiles"
+                      :show-file-list="true"
+                      :limit="3"
+                      :file-list="fileList"
+                      :on-success="handleAvatarSuccess">
+                      <img class="upload_icon" :src="imgs" alt="" >
+                      <div class="upload_tips">上传图片</div>
+                  </el-upload>  -->
+                  <van-uploader class="upload_box" v-model="fileList" multiple :max-count="6" :before-read="handleAvatarSuccess" />
+            </div>
+            
             <van-button class="btn" type="default" round @click="submitMsg()">确定</van-button>
         </div>
     </div>
@@ -29,7 +46,7 @@
 </template>
 
 <script>
-import { sendMessage } from "@/api/leaveMessage";
+import { sendMessage,imgup } from "@/api/leaveMessage";
 export default {
   data() {
     return {
@@ -38,6 +55,8 @@ export default {
         details:'', //详情
         id:'',
         imgs:[],
+        fileList:[],
+        imgList:[]
     }
   },
   created() {
@@ -63,11 +82,38 @@ export default {
               this.details = '';
               this.phone = '';
               this.msg = '';
+              this.fileList=[];
+              this.imgs =[];
             })
           }
         }
-         
-        
+    },
+    // 图片上传
+    handleAvatarSuccess(res,file) {
+      console.log(res.length);
+      if(res.length > 0){
+        for(let i = 0; i < res.length; i++){
+            let myFormdata=new FormData();
+            myFormdata.set("file",res[i]);
+            this.imgList = myFormdata;
+            imgup(this).then(res => {
+            let imgUrl = "https://files.365lawhelp.com/" + res.data.data;
+            this.fileList.push({url:imgUrl})
+            this.imgs.push(imgUrl);
+          })
+        }
+      }else {
+        let oneFormdata=new FormData();
+            oneFormdata.set("file",res);
+            this.imgList = oneFormdata;
+            imgup(this).then(res => {
+            let imgUrl2 = "https://files.365lawhelp.com/" + res.data.data;
+            this.fileList.push({url:imgUrl2})
+            this.imgs.push(imgUrl2);
+          })
+      }
+
+      console.log(this.imgs);
     }
   },
 };
@@ -114,6 +160,22 @@ export default {
     width: 100%;
     background: linear-gradient(-5deg, #006EDC 0%, #2698EF 100%);
     color: #fff;
-    margin-top: 50px;
+    /* margin-top: 50px; */
+}
+.van-uploader {
+  display: block;
+}
+
+.upload_box {
+  margin-top: 15px;
+}
+.upload_tips {
+  font-size: 12px;
+  color: #B2B2B2;
+}
+.upload_box >>> .van-uploader__preview-image {
+  width:70px !important;
+  height:70px !important;
+
 }
 </style>

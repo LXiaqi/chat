@@ -171,15 +171,10 @@ export default {
     submit() {
       let varmsg = this.data_item.Satisfaction+'##'+this.data_item.Message;
       if(this.assessId != '' && this.assessId != null){
-        if(this.data_item.Satisfaction == '' || this.data_item.Message == ''){
-          _this.$toast.fail('请输入评价内容');
-        }else {
-           AddEvalua(this).then(res => {
+        AddEvalua(this).then(res => {
             this.sendMsg(this.receid,this.send_id,this.receive_id,varmsg,1,2);
             this.info();
           })
-        }
-       
       }
     },
     // 分配客服id

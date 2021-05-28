@@ -1,7 +1,7 @@
 <template>
   <div class="service">
     <el-container>
-    <el-aside width="120px">
+    <!-- <el-aside width="120px">
          <div class="service_left">
       <div class="el-icon-chat-line-round"></div>
       <div class="menu_list">
@@ -30,7 +30,7 @@
     <div class="user_out" v-show="mystate == 1 ">
  
     </div>
-    </el-aside>
+    </el-aside> -->
     <el-container>
     <el-main style="padding:0">
          <router-view></router-view>　　

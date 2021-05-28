@@ -5,7 +5,8 @@
               <div>历史会话</div>
           </div>
           <div class="chat_input_pcbox">
-              <el-input v-model="search_user" placeholder="搜索聊天用户"></el-input>
+              <el-input v-model="search_user" placeholder="搜索聊天用户" clearable class="search_chat_ipt"></el-input>
+              <el-button slot="append" icon="el-icon-search" @click="searchBtn()"></el-button>
           </div>
           <!-- 聊天侧边栏 -->
           <div class="chats_content_box" >
@@ -136,6 +137,10 @@ export default {
   },
   
   methods: {
+    // 搜索按钮
+     searchBtn() {
+      this.info();
+    },
    // 左侧聊天列表的渲染
    info() {
        chatList(this).then(res => {
@@ -235,6 +240,9 @@ export default {
 /* 搜索框 */
 .chat_input_pcbox {
   margin: 20px;
+}
+.search_chat_ipt {
+  width: 80%;
 }
 /* 聊天列表 */
 #chat_select {
