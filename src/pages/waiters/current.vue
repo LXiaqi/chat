@@ -783,10 +783,7 @@ export default {
   text-align: end;
   margin-inline-end: 20px;
 }
-.chat_my_left {
-}
-.chat_my_left2 {
-}
+
 .chat_my_right_msgbox {
   margin-top: 18px;
 }
