@@ -6954,6 +6954,11 @@ vue@^2.5.2:
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.6.12.tgz#f5ebd4fa6bd2869403e29a896aed4904456c9123"
   integrity sha512-uhmLFETqPPNyuLLbsKz6ioJ4q7AZHzD8ZVFNATNyICSZouqP2Sz0rotWQC8UNBF6VGSCs5abnKJoStA6JbCbfg==
 
+vuejs-emoji@^0.1.8:
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/vuejs-emoji/-/vuejs-emoji-0.1.8.tgz#c9503fdb8a8ac49745e6f8e445fa99fe48a5f6b0"
+  integrity sha512-yBMlwM3xVdeccwBqPZNQ8A5TCZ4xqptrEwHkgDeL54LklnvOfTeELM81QUkDfKIOAiqE554cEWOTIYrfNN8slA==
+
 vuex@^3.6.2:
   version "3.6.2"
   resolved "https://registry.yarnpkg.com/vuex/-/vuex-3.6.2.tgz#236bc086a870c3ae79946f107f16de59d5895e71"

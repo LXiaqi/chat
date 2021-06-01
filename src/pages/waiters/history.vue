@@ -249,7 +249,7 @@ export default {
   background-color: #f5f5f5;
 }
 .chats_content_box {
-  height: 820px;
+  height: 745px;
   overflow: hidden;
   overflow-y: scroll;
 }
@@ -367,10 +367,6 @@ export default {
 .chat_my_right {
   text-align: end;
   margin-inline-end: 20px;
-}
-.chat_my_left {
-}
-.chat_my_left2 {
 }
 .chat_my_right_msgbox {
   margin-top: 18px;

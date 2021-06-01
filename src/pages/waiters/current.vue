@@ -19,7 +19,7 @@
           <span class="chat_tips" v-if="item.tips"></span>
           <span class="chat_name">{{ item.CustomerName }}</span>
           <div class="chat_time">{{ item.Time }}</div>
-          <div class="chat_userinfo">{{ item.Message }}</div>
+          <div class="chat_userinfo" v-html="item.Message"></div>
           <div class="select_label" v-if="item.LabelName.length == 0">
              <el-tag size="mini" type="success" effect="dark" @click="selectLabel(item.LabelName)">选择标签</el-tag>
           </div>
@@ -34,7 +34,6 @@
                     </div>
                     <el-tag slot="reference" size="mini" type="success" effect="dark" @click="selectLabel(item.LabelName)">查看</el-tag>
                 </el-popover>
-          
           </div>
         </div>
       </div>
@@ -63,7 +62,7 @@
                   </div>
                 </div>
                 <div class="chat_details_sentence" style="margin-top:18px">
-                  <span v-if="item.State == 0"> {{ item.Message }}</span>
+                  <span v-if="item.State == 0" v-html="item.Message"> </span>
                   <el-image class="img_chat" v-if="item.State == 1" :src="item.Message" :preview-src-list="[item.Message]" alt=""></el-image>
                 </div>
               </div>
@@ -76,7 +75,7 @@
                   </div>
                 </div>
                 <div class="chat_my_right_msgbox">
-                  <span class="chat_details_sentence_s" v-if="item.State == 0"> {{ item.Message }}</span>
+                  <span class="chat_details_sentence_s" v-if="item.State == 0" v-html="item.Message"> </span>
                   <el-image class="img_chat" v-if="item.State == 1" :src="item.Message" :preview-src-list="[item.Message]" alt="" ></el-image>
                 </div>
               </div>
@@ -84,11 +83,15 @@
           </div>
           <!-- 消息发送框 -->
           <div class="chat_sendout_box">
-            <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="chat_sendout" class="chat_sendout_ipt" @keydown.enter.native="keyDown"></el-input>
-            <el-button type="primary" @click="sendOut()">发送</el-button>
+            <!-- <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="chat_sendout" class="chat_sendout_ipt" @keydown.enter.native="keyDown"></el-input> -->
+            <div contenteditable class="chat_sendout_ipt" @keyup.delete="delMessage" ref="msgInputContainer" >
+              <img v-for="(item,index) in emojiList" :key="index" :src="item" width="20px" height="20px" alt="" style="vertical-align: bottom;">
+            </div>
+            <emoji-icon @select="selectIcon"></emoji-icon>
             <el-upload class="avatar-uploader" action="/BasicData/UploadFiles" :show-file-list="false" :on-success="handleAvatarSuccess">
               <i class="el-icon-circle-plus-outline"></i>
             </el-upload>
+            <el-button type="primary" @click="sendOut()">发送</el-button>
             <el-button type="warning" @click="end()">结束服务</el-button>
           </div>
         </el-main>
@@ -174,6 +177,7 @@ export default {
       quickData:[],
       quickType:0, // 侧边的快捷状态
       right_type:1, // 判断聊天列表没有数据的时候右边栏目隐藏, 1是有数据，0 是没有
+      emojiList:[],
     };
   },
   created() {
@@ -256,6 +260,18 @@ export default {
   },
  
   methods: {
+    delMessage(e){
+      console.log(e);
+      console.log(this.$refs.msgInputContainer.innerHTML);
+      this.chat_sendout = this.$refs.msgInputContainer.innerHTML;
+    },
+    // 表情选中
+    selectIcon(val) {
+      let emoji = '.'+val.match(/src=.(\S*).png/)[1]+'.png'
+      console.log(emoji);
+      this.emojiList.push(emoji);
+      console.log(this.emojiList);
+    },
     //搜索按钮
     searchBtn() {
       this.info();
@@ -537,8 +553,10 @@ export default {
     },
     // 消息发送
     sendOut() {
+      this.chat_sendout = this.$refs.msgInputContainer.innerHTML;
       this.sendMsg(this.receid,this.id,this.userInformationId,this.chat_sendout,0,0);
       this.chat_sendout = "";
+      this.$refs.msgInputContainer.innerHTML = '';
     },
     // 个人信息的展开
     user_information() {
@@ -556,10 +574,12 @@ export default {
     // 键盘事件
     keyDown(e) {
       if (e.ctrlKey && e.keyCode == 13) {
+        this.chat_sendout = this.$refs.msgInputContainer.innerHTML;
         //用户点击了ctrl+enter触发
         this.sendMsg(this.receid,this.id,this.userInformationId,this.chat_sendout,0,0);
         this.chat_sendout = "";
       } else {
+        console.log(e);
         //用户点击了enter触发
         // 执行一些逻辑方法
         if (e != undefined) {
@@ -593,7 +613,6 @@ export default {
       }else {
            this.$message.error('标签还未选择，请选择标签后结束会话！');
       }
-     
     },
   },
   
@@ -787,7 +806,11 @@ export default {
 }
 .chat_sendout_ipt {
   width: 1000px;
+  height: 62px;
   margin: 0px 20px 0 0;
+  padding: 10px;
+  display: inline-block;
+  border: 1px solid #ccc;
 }
 /* 用户信息 */
 .user_customer {

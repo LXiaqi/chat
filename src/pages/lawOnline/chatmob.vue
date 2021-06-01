@@ -18,7 +18,7 @@
         <div v-if="(item.Types == 0 || item.Types == 2) && item.State != 2" class="chat_mob_left">
             <div class="chat_details_info_box">
                 <img class="chat_active_img"  src="./../../assets/img/waiters/avatar_group.png" alt="">
-                <span class="chat_details_sentence" v-show="item.State == 0"> {{item.Message}}</span>
+                <span class="chat_details_sentence" v-show="item.State == 0" v-html="item.Message"> </span>
                  <img class="chatimg_s" :src="item.Message" alt="" v-if="item.State == 1" @click="amplification(item.Message)">
             </div>
         </div>
@@ -47,9 +47,7 @@
         </div>
         <div v-if="item.Types == 1 && item.State != 2" class="chat_mob_right">
             <div class="chat_details_info_box">
-               <span class="chat_details_sentence_s" v-show="item.State == 0">
-                    {{item.Message}}
-                </span>
+               <span class="chat_details_sentence_s" v-show="item.State == 0" v-html="item.Message"></span>
                 <img class="chatimg_s" :src="item.Message" alt="" v-if="item.State == 1" @click="amplification(item.Message)">
                 <img class="chatimg_" src="./../../assets/img/waiters/avatar_group.png" alt="">
             </div>
@@ -57,7 +55,11 @@
       </div>
     </div>
     <div class="chat_input_box">
-       <van-field class="chat_ipt" v-model="value"  placeholder=""  />
+       <!-- <van-field class="chat_ipt" v-model="value"  placeholder=""  /> -->
+      <div contenteditable :class="sendBtnType ? 'chat_ipt2' : 'chat_ipt'"  ref="msgInputContainer"  @input="changeval()">
+        <img v-for="(item,index) in emojiList" :key="index" :src="item" width="20px" height="20px" alt="" style="vertical-align: bottom;">
+      </div>
+       <span @click="emoji_click()"><emoji-icon @select="selectIcon" :iconConfig="iconConfig"  :class="sendBtnType ? 'emoji_box2' : 'emoji_box'" ></emoji-icon></span>
        <img class="chat_add_icon" src="./../../assets/img/chatmob/add.png" alt="" srcset="" v-show="!sendBtnType" @click="add_img()">
        <van-button  v-show="sendBtnType" class="chat_add_send" type="primary" @click="send()">发送</van-button>
     </div>
@@ -103,8 +105,11 @@ export default {
       data_item: {
         Message:'', // 评价留言
         Satisfaction:'', // 评价满意度
-      }
-      
+      },
+      iconConfig:{
+        placement: 'bottom',
+      }, // 表情显示位置
+      emojiList:[],// 表情图片
     }
   },
   created() {
@@ -159,6 +164,27 @@ export default {
         });
   },
   methods: {
+    // 获取输入框的值
+    changeval() {
+      this.value = this.$refs.msgInputContainer.innerHTML;
+    },
+    // 点击表情显示
+    emoji_click() {
+      if(document.querySelectorAll('.emoji-bottom').length == 0) {
+        this.bottom_type = false;
+      }else {
+        this.bottom_type = true;
+      }
+    },
+    //表情选中
+    selectIcon(val) {
+      let emoji = '.'+val.match(/src=.(\S*).png/)[1]+'.png'
+      this.emojiList.push(emoji);
+      this.$nextTick(()=> {
+        this.value = this.$refs.msgInputContainer.innerHTML;
+      })
+      this.bottom_type = false;
+    },
     // 单选按钮的change
     groupchange($event){
       this.data_item.Satisfaction = $event;
@@ -199,6 +225,7 @@ export default {
                   if(state == 0){
                      _this.sendMsg(_this.receid,_this.send_id,_this.receive_id,_this.value,1,0);
                      _this.value = '';
+                     _this.$refs.msgInputContainer.innerHTML = '';
                   }
                   if(state == 1) {
                       _this.sendMsg(_this.receid,_this.send_id,_this.receive_id,img,1,1)
@@ -345,6 +372,7 @@ export default {
          
         }else {
            this.sendMsg(this.receid,this.send_id,this.receive_id,this.value,1,0);
+           this.$refs.msgInputContainer.innerHTML = '';
            this.value = '';
         }
   
@@ -352,6 +380,11 @@ export default {
     },
     //底栏状态切换
     add_img() {
+      if(document.querySelectorAll('.emoji-bottom').length != 0) {
+        let mooji_bottom = document.getElementsByClassName('emoji-bottom');
+        console.log(mooji_bottom[0]);
+        mooji_bottom[0].style.display = "none"
+      }
       if(this.bottom_type == false) {
           this.bottom_type = true;
       }else {
@@ -415,26 +448,44 @@ export default {
   
 }
 .chat_ipt {
-  width: 74vw;
-  height: 33px;
-  padding: 4px;
-  margin-left: 16px;
-  border-radius: 8px;
-  top: 14px;
+    width: 70vw;
+    height: 20px;
+    padding: 4px;
+    margin-left: 16px;
+    border-radius: 8px;
+    top: 17px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    position: absolute;
+    overflow: hidden;
+    overflow-y: scroll;
+}
+.chat_ipt2 {
+    width: 65vw;
+    height: 20px;
+    padding: 4px;
+    margin-left: 16px;
+    border-radius: 8px;
+    top: 17px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    position: absolute;
+    overflow: hidden;
+    overflow-y: scroll;
 }
 .chat_add_icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   position: absolute;
-  right: 28px;
-  top: 17.5px;
+  right: 18px;
+  top: 19px;
 }
 .chat_add_send {
-   width: 58px;
+   width: 56px;
   height: 28px;
   line-height: 28px;
   position: absolute;
-  right: 16px;
+  right: 10px;
   top: 17.5px;
   font-size: 12px;
   border-radius: 4px;
@@ -525,5 +576,66 @@ export default {
   display: block;
   color: #ccc;
   padding: 10px 0;
+}
+/* 表情 */
+.emoji_box {
+  position: absolute !important;
+  top: 17px;
+  right: 52px;
+}
+.emoji_box >>> .emoji-wrap {
+  position: absolute;
+    top: 40px;
+    /* right: -45px; */
+    z-index: 20;
+    width: 100vw;
+    height: 14.8vh;
+}
+.emoji_box >>> .emoji-bottom {
+  position: absolute;
+  top: 40px !important;
+  right: -52px;
+  left: auto !important;
+}
+.emoji_box >>> .emoji {
+  width: 99.4vw;
+    height: 14.8vh;
+    background: #fff;
+    z-index: 10;
+    box-shadow: 1px 5px 5px #ccc;
+    display: -webkit-flex;
+    display: flex;
+    overflow: hidden;
+    overflow-y: scroll;
+}
+.emoji_box2 {
+  position: absolute !important;
+  top: 17px;
+  right: 72px;
+}
+.emoji_box2 >>> .emoji-wrap {
+  position: absolute;
+    top: 40px;
+    /* right: -45px; */
+    z-index: 20;
+    width: 100vw;
+    height: 14.8vh;
+}
+.emoji_box2 >>> .emoji-bottom {
+  position: absolute;
+  top: 40px !important;
+  right: -72px;
+  left: auto !important;
+}
+.emoji_box2 >>> .emoji {
+  width: 99.4vw;
+    height: 14.8vh;
+    background: #fff;
+    z-index: 10;
+    box-shadow: 1px 5px 5px #ccc;
+    display: -webkit-flex;
+    display: flex;
+    overflow: hidden;
+    overflow-y: scroll;
 }
 </style>

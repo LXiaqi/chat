@@ -11,6 +11,8 @@ import 'element-ui/lib/theme-chalk/index.css';
 import Axios from 'axios';
 import VueCookies from 'vue-cookies'
 import store from './store/index';
+import Vue2Emoji from 'vuejs-emoji';
+Vue.use(Vue2Emoji);
 Vue.prototype.$http = Axios
 Vue.http = Axios
 Vue.config.productionTip = false
