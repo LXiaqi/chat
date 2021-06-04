@@ -57,7 +57,7 @@
     <div class="chat_input_box">
        <!-- <van-field class="chat_ipt" v-model="value"  placeholder=""  /> -->
       <div contenteditable :class="sendBtnType ? 'chat_ipt2' : 'chat_ipt'"  ref="msgInputContainer"  @input="changeval()">
-        <img v-for="(item,index) in emojiList" :key="index" :src="item" width="20px" height="20px" alt="" style="vertical-align: bottom;">
+        <img v-for="(item,index) in emojiList" :key="index" :src="item"  alt="" style="vertical-align: bottom;width:20px;height:20px;">
       </div>
        <span @click="emoji_click()"><emoji-icon @select="selectIcon" :iconConfig="iconConfig"  :class="sendBtnType ? 'emoji_box2' : 'emoji_box'" ></emoji-icon></span>
        <img class="chat_add_icon" src="./../../assets/img/chatmob/add.png" alt="" srcset="" v-show="!sendBtnType" @click="add_img()">
@@ -143,7 +143,7 @@ export default {
         });
              //显示发送的私聊消息
         _this.demoChatHubProxy.on('showMsgToPages',function(sendId, sengName, message,type,state){
-          console.log('接发送聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+type+',类型state：'+state);
+          console.log('发送私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+type+',类型state：'+state);
            _this.sendShow(sendId,sengName,message,type,state);
        },); 
           //显示新用户加入消息

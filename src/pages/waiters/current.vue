@@ -26,7 +26,7 @@
           <div v-if="item.LabelName.length != 0">
              <el-popover class="select_label"
                   placement="right"
-                  width="200"
+                  width="340"
                   trigger="hover"
                    >
                      <div >
@@ -52,7 +52,7 @@
         <el-main style="padding: 0">
           <div class="chat_details_content" ref="content_view">
             <span class="tips" @click="more()" v-loading="more_type" v-if="more_show" >加载更多</span>
-            <div v-for="item in conversationList" :key="item.Id" :class="item.img == false ? 'chat_my_left' : 'chat_my_left2'">
+            <div v-for="item in detailList" :key="item.Id" :class="item.img == false ? 'chat_my_left' : 'chat_my_left2'">
               <div v-if="item.Types == 1 && item.State != 2">
                 <div class="chat_details_info_box">
                   <img :src="item.CustomerHeadImage" alt="" />
@@ -84,8 +84,8 @@
           <!-- 消息发送框 -->
           <div class="chat_sendout_box">
             <!-- <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="chat_sendout" class="chat_sendout_ipt" @keydown.enter.native="keyDown"></el-input> -->
-            <div contenteditable class="chat_sendout_ipt" @keyup.delete="delMessage" ref="msgInputContainer" >
-              <img v-for="(item,index) in emojiList" :key="index" :src="item" width="20px" height="20px" alt="" style="vertical-align: bottom;">
+            <div contenteditable class="chat_sendout_ipt"  ref="msgInputContainer" @input="changeval()" @keydown.enter="keyDown">
+              <img v-for="(item,index) in emojiList" :key="index" :src="item"  alt="" style="vertical-align: bottom; width:20px; height:20px;">
             </div>
             <emoji-icon @select="selectIcon"></emoji-icon>
             <el-upload class="avatar-uploader" action="/BasicData/UploadFiles" :show-file-list="false" :on-success="handleAvatarSuccess">
@@ -140,8 +140,7 @@
 </template>
 <script>
 import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession,getreceid,labelList,setLabel} from "@/api/waiters";
-import {logout} from "@/api/login";
-
+import {dingPush} from '@/api/dingTalk'
 export default {
   data() {
     return {
@@ -155,7 +154,7 @@ export default {
       searchid: "",
       id: "", //发送方id
       name: "",
-      chat_list: [], // 当前会话列表
+      chat_list:[], // 当前会话列表
       search_user: "", // 搜索内容
       chatType: 0, // 聊天列表的状态 0是当前会话 1 是历史会话， 这里固定为0
       chat_state: 0, // 点击选中的状态
@@ -164,9 +163,8 @@ export default {
       page: 1, //当前页数
       pagenum: 10, // 每页条数
       user_id: "", // 当前客服id
-      conversationList: [], // 当前选中会话的聊天内容， 数组
       chat_sendout: "", // 发送聊天文本域内容
-      demoChatHubProxy: {},
+      demoChatHubProxy:{},
       userInformationId: "", // 侧边栏的展开的个用户id
       drawer: false, // 用户信息资料模态框显示隐藏
       customerData: {}, //客户资料
@@ -178,6 +176,10 @@ export default {
       quickType:0, // 侧边的快捷状态
       right_type:1, // 判断聊天列表没有数据的时候右边栏目隐藏, 1是有数据，0 是没有
       emojiList:[],
+      detailList:[], // 当前选中会话的聊天内容， 数组
+      CustName:'',// 推送的客户名称
+      myPhoneNum: '',// 当前客服手机号
+      sendTime:'', //客服发消息的时间
     };
   },
   created() {
@@ -186,6 +188,7 @@ export default {
         this.id = res.data.sendId;
         this.user_id = res.data.sendId;
         this.name = res.data.sendName;
+        this.myPhoneNum = res.data.Phone
       });
 
   },
@@ -229,18 +232,24 @@ export default {
     //接收私聊消息
     _this.demoChatHubProxy.on("remindMsg", function (sendId, sengName, message, types,state) {
         console.log('接收私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+types+',类型state：'+state);
-        _this.receiveShow(sendId, sengName, message, types,state)
+        _this.receiveShow(sendId, sengName, message, types,state);
+        _this.dingtalkPush(sengName,sendId,new Date().getTime()/1000);
+        _this.$notify.info({
+          title: '提示',
+          message: '您有一条新的消息请及时回复',
+          position: 'bottom-right',
+          duration: 30000
+        });
+        _this.notify();
       }
     );
     //显示发送的私聊消息
-    _this.demoChatHubProxy.on(
-      "showMsgToPages",
-      function (sendId, sengName, message, types, state) {
+    _this.demoChatHubProxy.on("showMsgToPages", function (sendId, sengName, message, types, state) {
         console.log('发送私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+types+',类型state：'+state);
-        _this.sendShow(sendId, sengName, message, types, state);
+        _this.sendShow(sendId, sengName, message, types, state,);
+        _this.sendTime = new Date().getTime()/1000;
       }
     );
-  
       connection.error((error)=>{
         console.log(error)
       })  
@@ -251,19 +260,70 @@ export default {
 
     connection.start()
       .done(function () {
-          // _this.conversationList = [];
           _this.addChatUser();
       })
       .fail(function () {
         _this.$message.error("连接失败");
       });
+
+      Notification.requestPermission().then(res => {
+        console.log(res);
+      });
   },
  
   methods: {
-    delMessage(e){
-      console.log(e);
-      console.log(this.$refs.msgInputContainer.innerHTML);
-      this.chat_sendout = this.$refs.msgInputContainer.innerHTML;
+    dingtalkPush_two() {
+      let len =  this.chat_list.length;
+      for(let i = 0; i < len; i++){
+        if(this.chat_list[i].Types == 1){
+          let thisTime = this.chat_list[i].Time;
+          thisTime = thisTime.replace(/-/g, '/');
+          let time = new Date(thisTime);
+          time = time.getTime()/1000;
+          this.CustName = this.chat_list[i].CustomerName;
+            if(new Date().getTime()/1000 - time > 180){
+              dingPush(this).then(res => {
+                    console.log(res);
+              })
+            }
+        }
+      }
+    },
+    //钉钉推送 (实时方法)
+    dingtalkPush(sengName,sendid,gettime) {
+      const that = this;
+      var t = setInterval(() => {
+        console.log('当前客服回复（客户id）：'+ that.userInformationId+'，当前客服回复（时间戳）：'+that.sendTime+',客服收到消息的客户id：'+sendid+',客服接收消息时间戳：'+ gettime);
+        if(that.userInformationId == sendid && that.sendTime > gettime){
+          if(that.sendTime - gettime < 180){
+            clearInterval(t);
+          }else {
+            that.CustName = sengName;
+            dingPush(that).then(res => {
+              console.log(res);
+              clearInterval(t);
+            })
+          }
+        }else {
+          if(new Date().getTime()/1000 - gettime > 180){
+             that.CustName = sengName;
+             dingPush(that).then(res => {
+              console.log(res);
+              clearInterval(t);
+            })
+          }else {
+            return;
+          }
+        }
+      },1000);
+     
+    },
+    // 系统推送
+    notify() {
+      var notification = new Notification('消息提醒', { body: '您有一条新的消息请及时回复！' });
+    },
+    changeval() {
+
     },
     // 表情选中
     selectIcon(val) {
@@ -374,15 +434,19 @@ export default {
         this.userInformationId = id;
         this.right_type = 1;
         this.more_show = false;
-        this.$message.success('客户'+userName+'加入会话');
+         this.$notify.info({
+          title: '提示',
+          message: '客户'+userName+'加入会话',
+          position: 'bottom-right',
+          duration: 0
+        });
         getreceid(this).then(res => {
           console.log('新用户加入消息之后重新获取一遍接待id（接口）：'+res.data.data.Id);
           this.receid = res.data.data.Id;
           if(state == false) {
              this.sendMsg(this.receid,this.id,this.userInformationId,this.msg,2,0);
           }
-         
-          this.info(); 
+          this.notify();
         })
     },
     // 发送私聊消息的展示
@@ -398,7 +462,8 @@ export default {
             .replace("T", " "),
           State:state
         };
-        this.conversationList.push(datas);
+        this.detailList.push(datas);
+        
         // 滚动条到底
         this.$nextTick(() => {
           this.$refs.content_view.scrollTop =
@@ -427,8 +492,6 @@ export default {
     },
     // 接收私聊消息的展示
     receiveShow(sendId,sengName, message,types,state){
-      console.log('发送方id：'+sendId);
-      console.log('当前选中的id：'+this.userInformationId);
       if(sendId == this.userInformationId) {
         let datas = {
           CustomerId: sendId,
@@ -441,7 +504,7 @@ export default {
             .replace("T", " "),
           State: state,
         };
-        this.conversationList.push(datas);
+        this.detailList.push(datas);
       }
         // 滚动条到底
         this.$nextTick(() => {
@@ -493,7 +556,7 @@ export default {
         if(res.data.data.length == 0) {
           this.chat_list = [];
           this.right_type = 0;
-          this.userinfo();
+          // this.userinfo();
         }else {
           this.right_type = 1;
           this.chat_list = res.data.data;
@@ -502,6 +565,7 @@ export default {
           this.user_id = this.chat_list[0].UserId;
           this.userInformationId = this.chat_list[0].CustomerId;
           this.getwaiter();
+          this.dingtalkPush_two();
           this.userinfo();
         }
       });
@@ -515,7 +579,7 @@ export default {
           this.more_show = true;
         }
         this.total = Math.ceil(res_data.data.recordsTotal / 10);
-        this.conversationList = res_data.data.data;
+        this.detailList = res_data.data.data;
         // 页面滚动到最底
         this.$nextTick(() => {
           this.$refs.content_view.scrollTop =  this.$refs.content_view.scrollHeight + 60;
@@ -541,7 +605,7 @@ export default {
         this.more_type = true;
         conversation(this).then((res) => {
           for (let i = 0; i < res.data.data.length; i++) {
-            this.conversationList.unshift(res.data.data[i]);
+            this.detailList.unshift(res.data.data[i]);
           }
           this.more_type = false;
         });
@@ -578,6 +642,7 @@ export default {
         //用户点击了ctrl+enter触发
         this.sendMsg(this.receid,this.id,this.userInformationId,this.chat_sendout,0,0);
         this.chat_sendout = "";
+        this.$refs.msgInputContainer.innerHTML = '';
       } else {
         console.log(e);
         //用户点击了enter触发
@@ -802,12 +867,16 @@ export default {
   margin: 10px;
 }
 .chat_sendout_ipt {
-  width: 1000px;
+  width: 900px;
   height: 62px;
   margin: 0px 20px 0 0;
   padding: 10px;
   display: inline-block;
   border: 1px solid #ccc;
+  vertical-align: middle;
+  overflow: hidden;
+  overflow-y: scroll;
+
 }
 /* 用户信息 */
 .user_customer {
