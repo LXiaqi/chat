@@ -17,7 +17,7 @@
       <div v-for="(item,index) in chatList" :key="index" class="chat_mob">
         <div v-if="(item.Types == 0 || item.Types == 2) && item.State != 2" class="chat_mob_left">
             <div class="chat_details_info_box">
-                <img class="chat_active_img"  src="./../../assets/img/waiters/avatar_group.png" alt="">
+                <img class="chat_active_img"  :src="item.UserHeadImage" alt="">
                 <span class="chat_details_sentence" v-show="item.State == 0" v-html="item.Message"> </span>
                  <img class="chatimg_s" :src="item.Message" alt="" v-if="item.State == 1" @click="amplification(item.Message)">
             </div>
@@ -49,7 +49,7 @@
             <div class="chat_details_info_box">
                <span class="chat_details_sentence_s" v-show="item.State == 0" v-html="item.Message"></span>
                 <img class="chatimg_s" :src="item.Message" alt="" v-if="item.State == 1" @click="amplification(item.Message)">
-                <img class="chatimg_" src="./../../assets/img/waiters/avatar_group.png" alt="">
+                <img class="chatimg_" :src="item.CustomerHeadImage" alt="">
             </div>
         </div>
       </div>
@@ -109,7 +109,9 @@ export default {
       iconConfig:{
         placement: 'bottom',
       }, // 表情显示位置
-      emojiList:[],// 表情图片
+      emojiList:[],// 表情图片,
+      myimg:'',
+      headimg:'', //分配的客服头像
     }
   },
   created() {
@@ -208,6 +210,7 @@ export default {
       const _this = this;
       distribution(_this).then(res => {
         console.log(res);
+        this.headimg = res.data.data.HeadImg
         _this.$nextTick(() => {
          _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
         })
@@ -268,7 +271,8 @@ export default {
         UserName:sengName,
         Message:message,
         Types:type,
-        State:state
+        State:state,
+        CustomerHeadImage:this.myimg
       }
       this.chatList.push(data);
       this.$nextTick(() => {
@@ -282,7 +286,8 @@ export default {
           CustomerName:sengName,
           Message:message,
           Types:types,
-          State:state
+          State:state,
+          UserHeadImage:this.headimg
         }
       this.chatList.push(data)
       this.$nextTick(() => {
@@ -312,6 +317,7 @@ export default {
         GetUserData(this).then(res => {
         this.send_name = res.data.sendName
         this.send_id = res.data.sendId;
+        this.myimg = res.data.Image;
         const that = this;
         chatHistoryMob(that).then(data => {
           if(data.data.recordsTotal > 10) {

@@ -179,7 +179,8 @@ export default {
       detailList:[], // 当前选中会话的聊天内容， 数组
       CustName:'',// 推送的客户名称
       myPhoneNum: '',// 当前客服手机号
-      sendTime:'', //客服发消息的时间
+      sendTime:'', //客服发消息的时间,
+      myimg:''
     };
   },
   created() {
@@ -189,6 +190,7 @@ export default {
         this.user_id = res.data.sendId;
         this.name = res.data.sendName;
         this.myPhoneNum = res.data.Phone
+        this.myimg = res.data.Image
       });
 
   },
@@ -460,7 +462,8 @@ export default {
             .toJSON()
             .substr(0, 19)
             .replace("T", " "),
-          State:state
+          State:state,
+          UserHeadImage:this.myimg
         };
         this.detailList.push(datas);
         
@@ -503,6 +506,7 @@ export default {
             .substr(0, 19)
             .replace("T", " "),
           State: state,
+          CustomerHeadImage:this.head_img
         };
         this.detailList.push(datas);
       }

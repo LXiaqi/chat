@@ -11,10 +11,10 @@
           <!-- 聊天侧边栏 -->
           <div class="chats_content_box" >
               <div @click="viewDetails(item,index)" v-for="(item, index) in chat_list" :key="item.Id" class="chat_on_box" :id="chat_state == index ? 'chat_select' :'' ">
-                  <img class="chat_img" src="./../../assets/img/waiters/avatar_group.png" alt="">
+                  <img class="chat_img" :src="item.HeadImage" alt="">
                   <span class="chat_name">{{item.CustomerName}}</span>
                    <div class="chat_time">{{item.Time}}</div>
-                   <div class="chat_userinfo">{{item.Message}}</div>
+                   <div class="chat_userinfo" v-html="item.Message"></div>
               </div>
           </div>
       </div>
@@ -23,7 +23,7 @@
         <el-container>
             <!-- 头部信息 -->
             <el-header class="chat_details_head">
-                <img class="active_img" src="./../../assets/img/waiters/avatar_group.png" alt="">
+                <img class="active_img" :src="customer_img" alt="">
                 <span> {{customer_name}}</span>
                  <el-button class="head_btn" @click="user_information()">...</el-button>
             </el-header>
@@ -34,14 +34,14 @@
                     <div v-for="item in conversationList" :key="item.Id" class="chat_my_left">
                         <div v-show="item.Types == 1">
                             <div class="chat_details_info_box">
-                                <img  src="./../../assets/img/waiters/avatar_group.png" alt="">
+                                <img :src="item.CustomerHeadImage" alt="">
                                 <div class="chat_details_active_time">
                                     <div>{{item.CustomerName}}</div>
                                     <span>{{item.CreateTime}}</span>
                                 </div>
                             </div>
                             <div class="chat_details_sentence">
-                                <span v-show="!item.img"> {{ item.Message }}</span>
+                                <span v-show="!item.img" v-html="item.Message"></span>
                                 <el-image
                                     class="img_chat"
                                     v-if="item.img"
@@ -53,15 +53,15 @@
                         </div>
                         <div v-show="item.Types == 0" class="chat_my_right">
                             <div class="chat_details_info_box">
-                                <img  src="./../../assets/img/waiters/avatar_group.png" alt="">
+                                <img  :src="item.UserHeadImage" alt="">
                                 <div class="chat_details_active_time">
                                     <div style="text-align:left">{{item.UserName}}</div>
                                     <span>{{item.CreateTime}}</span>
                                 </div>
                             </div>
                             <div class="chat_my_right_msgbox">
-                               <span class="chat_details_sentence_s" v-show="!item.img">
-                                    {{item.Message}}
+                               <span class="chat_details_sentence_s" v-show="!item.img" v-html="item.Message">
+                                    
                                </span>
                                 <el-image
                                     class="img_chat"
@@ -114,6 +114,7 @@ export default {
          chatType:1, // 聊天列表的状态 0是当前会话 1 是历史会话，
          chat_state:0, // 点击选中的状态
          customer_name:'',// 聊天详情中左上角客户名字
+         customer_img:'', // 选中的客户头像
          page:1, //当前页数
          pagenum:10,// 每页条数
          user_id:'', // 当前选中会话的id
@@ -146,6 +147,7 @@ export default {
        chatList(this).then(res => {
             this.chat_list = res.data.data;
             this.customer_name =  this.chat_list[0].CustomerName;
+            this.customer_img = this.chat_list[0].HeadImage;
             this.user_id =  this.chat_list[0].UserId;
             this.userInformationId  =  this.chat_list[0].CustomerId;
             this.receptionId = this.chat_list[0].Id;
@@ -176,6 +178,7 @@ export default {
         this.page = 1;//还原
         this.chat_state = index; // 选中下标改变状态来更改钥匙
         this.customer_name =  data.CustomerName; // 选中聊天的对方名字
+        this.customer_img = data.HeadImage;
         this.user_id =  data.UserId; // 当前会话id
         this.userInformationId  = data.CustomerId; // 选中会话的对方id
         this.receptionId = data.Id;
@@ -341,13 +344,13 @@ export default {
 }
 /* 聊天细节 */
 .chat_details_info_box img {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
 }
 .chat_details_active_time {
   display: inline-block;
-  vertical-align: middle;
+  vertical-align: top;
   margin-left: 18px;
 }
 .chat_details_active_time span {
