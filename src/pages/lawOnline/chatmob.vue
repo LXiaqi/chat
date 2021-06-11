@@ -1,13 +1,13 @@
 <template>
   <div class="chat">
-    <van-nav-bar
+    <!-- <van-nav-bar
       class="nav_bar_chat"
       safe-area-inset-top
       title="在线客服"
       left-text=""
       left-arrow
       @click-left="onClickLeft"
-    />
+    /> -->
     <div :class="bottom_type == false ? 'chat_content' : 'chat_content2' " ref="content_view_m">
       <div class="more" v-show="more_type">
         <span v-show="more_show" @click="more()">加载更多</span>
@@ -64,21 +64,23 @@
        <van-button  v-show="sendBtnType" class="chat_add_send" type="primary" @click="send()">发送</van-button>
     </div>
     <div class="img_box" v-show="bottom_type" safe-area-inset-bottom>
-      <el-upload
+      <!-- <el-upload
           class="avatar-uploader"
           action="/BasicData/UploadFiles"
           :show-file-list="false"
           :on-success="handleAvatarSuccess">
-          <img src="../../assets/img/chatmob/img_file.png" alt="" >
-      </el-upload>
+          
+      </el-upload> -->
+      <van-uploader class="avatar-uploader"  multiple :max-count="1" :before-read="handleAvatarSuccess">
+        <img src="../../assets/img/chatmob/img_file.png" alt="" >
+      </van-uploader>
     </div>
   </div>
 </template>
 
 <script>
 import { GetUserData,distribution,chatHistoryMob,DeleteCon } from "@/api/waiters";
-import { AddEvalua, } from "@/api/leaveMessage";
-
+import { AddEvalua,imgup } from "@/api/leaveMessage";
 import { ImagePreview } from 'vant';
 export default {
   data() {
@@ -112,6 +114,7 @@ export default {
       emojiList:[],// 表情图片,
       myimg:'',
       headimg:'', //分配的客服头像
+      imgList:''
     }
   },
   created() {
@@ -129,6 +132,17 @@ export default {
     }
   },
   mounted() {
+    if ((/Android/gi).test(navigator.userAgent)) {
+        window.addEventListener('resize', function () {
+            if (document.activeElement.tagName == 'INPUT' || 
+                document.activeElement.tagName == 'BODY' ) {
+                window.setTimeout(function () {
+                    document.activeElement.scrollIntoViewIfNeeded();
+                }, 0);
+            }
+        });
+    }
+
     this.info();
       const _this = this;
       this.$toast.loading({
@@ -209,12 +223,11 @@ export default {
     distributionId(typ,state,img){
       const _this = this;
       distribution(_this).then(res => {
-        console.log(res);
-        this.headimg = res.data.data.HeadImg
         _this.$nextTick(() => {
          _this.$refs.content_view_m.scrollTop = _this.$refs.content_view_m.scrollHeight
         })
         if(res.data.result != 9) {
+          this.headimg = res.data.data.HeadImg
            _this.demoChatHubProxy.invoke("addOnlineUser",res.data.data.UserId,_this.send_id,_this.send_name,1,_this.allotType);
              console.log('分配客服之后建立会话连接--发送方id：'+_this.send_id+',发送方名字：'+_this.send_name+',发送方身份：1,分配的客服id：'+res.data.data.UserId+',判断是否是第二次重连：'+_this.allotType);
              _this.$toast.loading({
@@ -245,22 +258,29 @@ export default {
     },
     // 客服均不在线的时候留言操作
     leave(){
+      console.log('不在线');
        const _this = this;
         _this.demoChatHubProxy.invoke("GetGeegtingData");
         _this.demoChatHubProxy.on("greetingsMessageToPage",function(content){
+          console.log(content);
           _this.sendMsg(_this.receid,'00000000-0000-0000-0000-000000000000',_this.send_id,content,'2',0);
-          _this.$dialog.alert({
+            _this.$dialog.confirm({
               title: '提示',
-              message: '客服均不在线.请前往留言',
-              theme: 'round-button',
-            }).then(() => {
+              message: content,
+              confirmButtonText:'留言'
+            })
+              .then(() => {
                 _this.$router.push({
                   name: 'leaveMessage',
                   query: {
                       id: _this.send_id
                     }
                 });
-            });
+              })
+              .catch(() => {
+                // on cancel
+              });
+            
         });
             
     },
@@ -400,21 +420,60 @@ export default {
     },
    // 图片上传
     handleAvatarSuccess(res,file) {
-      let imgUrl ='https://files.365lawhelp.com/'+res.data;
+      console.log(res);
+      let imgUrl = ''
       this.sendBtnType = true;
-       const that = this;
-      if(this.allotType == true) {
-          DeleteCon(this).then(res => {
-            console.log('删除会话');
-             that.distributionId(true,1,imgUrl);
-          })
-          
-        }else {
-          this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
+      const that = this;
+       if(res.length > 0){
+          let myFormdata=new FormData();
+            myFormdata.set("file",res[0]);
+            this.imgList = myFormdata;
+            imgup(this).then(res => {
+              imgUrl = "https://files.365lawhelp.com/" + res.data.data;
+              if(this.allotType == true) {
+                DeleteCon(this).then(res => {
+                  console.log('删除会话');
+                  that.distributionId(true,1,imgUrl);
+                })
+              }else {
+                this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
+              }
+              this.bottom_type = false;
+              this.sendBtnType = false;
+            })
+      }else {
+        let oneFormdata=new FormData();
+            oneFormdata.set("file",res);
+            this.imgList = oneFormdata;
+            imgup(this).then(res => {
+              imgUrl = "https://files.365lawhelp.com/" + res.data.data;
+                if(this.allotType == true) {
+                    DeleteCon(this).then(res => {
+                      console.log('删除会话');
+                      that.distributionId(true,1,imgUrl);
+                    })
+                  }else {
+                    this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
+                  }
+                  this.bottom_type = false;
+                  this.sendBtnType = false;
+              })
         }
 
-        this.bottom_type = false;
-        this.sendBtnType = false;
+      // let imgUrl ='https://files.365lawhelp.com/'+res.data;
+      // this.sendBtnType = true;
+      //  const that = this;
+      // if(this.allotType == true) {
+      //     DeleteCon(this).then(res => {
+      //       console.log('删除会话');
+      //        that.distributionId(true,1,imgUrl);
+      //     })
+      //   }else {
+      //     this.sendMsg(this.receid,this.send_id,this.receive_id,imgUrl,1,1)
+      //   }
+
+      //   this.bottom_type = false;
+      //   this.sendBtnType = false;
     },
     // 图片放大
     amplification(img) {
@@ -425,27 +484,27 @@ export default {
 </script>
 
 <style scoped>
-.nav_bar_chat {
+/* .nav_bar_chat {
   position: fixed;
   width: 100vw;
   height: 6.3vh;
   line-height: 6.3vh;
-}
+} */
 .chat_content {
   width: 100%;
-  height: 85vh;
+  height: 89vh;
   background-color: #F2F2F2;
   overflow: hidden;
   overflow-y: scroll;
-  padding-top: 6.3vh;
+  padding-top: 2.3vh;
 }
 .chat_content2 {
    width: 100%;
-  height: 70vh;
+  height: 74vh;
   background-color: #F2F2F2;
   overflow: hidden;
   overflow-y: scroll;
-  padding-top: 6.3vh;
+  padding-top: 2.3vh;
 }
 .chat_input_box {
   background-color: #F5F5F5;
@@ -644,4 +703,5 @@ export default {
     overflow: hidden;
     overflow-y: scroll;
 }
+[contenteditable]:focus{outline: none;}
 </style>

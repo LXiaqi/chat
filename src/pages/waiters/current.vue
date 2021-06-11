@@ -140,7 +140,9 @@
 </template>
 <script>
 import {chatList,conversation,getCustomerInfo,GetUserData,quickList,endSession,getreceid,labelList,setLabel} from "@/api/waiters";
-import {dingPush} from '@/api/dingTalk'
+import {dingPush} from '@/api/dingTalk';
+import {logout} from '@/api/dingTalk';
+
 export default {
   data() {
     return {
@@ -235,7 +237,7 @@ export default {
     _this.demoChatHubProxy.on("remindMsg", function (sendId, sengName, message, types,state) {
         console.log('接收私聊消息--发送发id：'+sendId+',发送方名字：'+sengName+'，消息内容：'+message+',状态types:'+types+',类型state：'+state);
         _this.receiveShow(sendId, sengName, message, types,state);
-        _this.dingtalkPush(sengName,sendId,new Date().getTime()/1000);
+         _this.dingtalkPush(sengName,sendId,new Date().getTime()/1000);
         _this.$notify.info({
           title: '提示',
           message: '您有一条新的消息请及时回复',
@@ -317,7 +319,7 @@ export default {
             return;
           }
         }
-      },1000);
+      },3000);
      
     },
     // 系统推送

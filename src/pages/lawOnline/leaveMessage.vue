@@ -1,13 +1,13 @@
 <template>
   <div class="chat">
-    <van-nav-bar
+    <!-- <van-nav-bar
       class="nav_bar_chat"
       safe-area-inset-top
       title="客服留言"
       left-text=""
       left-arrow
       @click-left="onClickLeft"
-    />
+    /> -->
     <div class="chat_content">
         <div class="frombox">
             <div class="group">
@@ -74,7 +74,7 @@ export default {
         if(this.msg == '') {
            this.$toast.fail('内容不能为空');
         }else{
-          if(!(/^1[3|4|5|8][0-9]\d{4,8}$/.test(this.phone))){
+          if(!(/^[1][3,4,5,7,8,9][0-9]{9}$/.test(this.phone))){
              this.$toast.fail('手机号码有误请重新输入');
           }else{
             sendMessage(this).then(res => {
@@ -120,7 +120,7 @@ export default {
 </script>
 
 <style scoped>
-.nav_bar_chat {
+/* .nav_bar_chat {
   position: fixed;
   width: 100vw;
   height: 6.3vh;
@@ -133,7 +133,7 @@ export default {
   overflow: hidden;
   overflow-y: scroll;
   padding-top: 6.3vh;
-}
+} */
 .frombox {
     margin: 20px;
 }
@@ -160,7 +160,7 @@ export default {
     width: 100%;
     background: linear-gradient(-5deg, #006EDC 0%, #2698EF 100%);
     color: #fff;
-    /* margin-top: 50px; */
+    margin-top: 20px;
 }
 .van-uploader {
   display: block;
