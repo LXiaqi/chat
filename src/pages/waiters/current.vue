@@ -610,7 +610,7 @@ export default {
       if (this.page <= this.total) {
         this.more_type = true;
         conversation(this).then((res) => {
-          for (let i = 0; i < res.data.data.length; i++) {
+          for (let i = res.data.data.length; i >= 0; i--) {
             this.detailList.unshift(res.data.data[i]);
           }
           this.more_type = false;

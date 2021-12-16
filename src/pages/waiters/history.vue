@@ -191,17 +191,9 @@ export default {
        if(this.page <= this.total) {
             this.more_type = true;
             conversation(this).then(res => {
-            for(let i = 0; i < res.data.data.length; i++){
+            for(let i = res.data.data.length; i >= 0; i--){
                 this.conversationList.unshift(res.data.data[i]);
-                if (
-                res.data.data[i].Message.indexOf(
-                    "https://files.365lawhelp.com"
-                ) == -1
-                ) {
-                res.data.data[i].img = false;
-                } else {
-                res.data.data[i].img = true;
-                }
+               
             }
                 this.more_type = false;
             })  

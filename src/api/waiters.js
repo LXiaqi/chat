@@ -37,7 +37,7 @@ export async function GetUserData(that) {
 }
 // 分配客服id
 export async function distribution(that) {
-    const res = await that.$http.get('/Communication/GetUserId?custid='+that.send_id);
+    const res = await that.$http.get('/Communication/GetUserId?custid='+that.myinfo.sendId);
     if(res.data.success == false) {
         // that.$message.error(res.data.msg);
         return res;
@@ -65,7 +65,7 @@ export async function endSession(that) {
 }
 // 移动端获取用户聊天记录
 export async function chatHistoryMob(that) {
-    const res = await that.$http.get('/ChatHistory/GerChatHistoryByCustomer?start='+that.page+'&length='+that.pagenum+'&customerId='+that.send_id);
+    const res = await that.$http.get('/ChatHistory/GerChatHistoryByCustomer?start='+that.page+'&length='+that.pagenum+'&customerId='+that.myinfo.sendId);
     if(res.data.success == false) {
         that.$message.error(res.data.msg);
     }else {
