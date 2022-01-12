@@ -45,44 +45,7 @@
             />
           </div>
         </div>
-        <div
-          v-if="(item.Types == 0 || item.Types == 2) && item.State == 2"
-          class="evaluate"
-        >
-          <van-radio-group
-            v-model="item.Satisfaction"
-            direction="horizontal"
-            @change="groupchange($event)"
-            :disabled="item.btntype"
-          >
-            <van-radio name="0">非常满意</van-radio>
-            <van-radio name="1">满意</van-radio>
-            <van-radio name="2">一般</van-radio>
-            <van-radio name="3">差</van-radio>
-          </van-radio-group>
-          <div>
-            <van-field
-              @input="textchange($event)"
-              v-model="item.Message"
-              rows="3"
-              autosize
-              type="textarea"
-              maxlength="50"
-              placeholder="请输入补充内容"
-              show-word-limit
-            />
-          </div>
-          <div class="evaluate_btn">
-            <van-button
-              :disabled="item.btntype"
-              class="submit_btn_s"
-              type="primary"
-              size="small"
-              @click="submit()"
-              >{{ item.btntype ? '已评价' : '评价' }}</van-button
-            >
-          </div>
-        </div>
+
         <div v-if="item.Types == 1 && item.State != 2" class="chat_mob_right">
           <div class="chat_details_info_box">
             <span
@@ -143,6 +106,7 @@
             <img class="chatimg_" :src="myinfo.Image" alt="" />
           </div>
         </div>
+
         <div class="chat_mob_left" v-if="item.type == 'smart'">
           <div class="chat_details_info_box">
             <img
@@ -166,6 +130,39 @@
           </div>
         </div>
       </div>
+      <div class="evaluate" v-show="evaluationType">
+        <van-radio-group
+          v-model="data_item.Satisfaction"
+          direction="horizontal"
+          @change="groupchange($event)"
+        >
+          <van-radio name="0">非常满意</van-radio>
+          <van-radio name="1">满意</van-radio>
+          <van-radio name="2">一般</van-radio>
+          <van-radio name="3">差</van-radio>
+        </van-radio-group>
+        <div>
+          <van-field
+            @input="textchange($event)"
+            v-model="data_item.Message"
+            rows="3"
+            autosize
+            type="textarea"
+            maxlength="50"
+            placeholder="请输入补充内容"
+            show-word-limit
+          />
+        </div>
+        <div class="evaluate_btn">
+          <van-button
+            class="submit_btn_s"
+            type="primary"
+            size="small"
+            @click="submit()"
+            >评价</van-button
+          >
+        </div>
+      </div>
     </div>
     <div class="chat_input_box">
       <!-- <van-field class="chat_ipt" v-model="value"  placeholder=""  /> -->
@@ -177,7 +174,11 @@
           @click="cutJonin()"
           >人工客服</van-button
         >
-        <van-button class="tips_btn" size="mini" type="default"
+        <van-button
+          class="tips_btn"
+          size="mini"
+          type="default"
+          @click="leaveMessage()"
           >留言</van-button
         >
       </div>
@@ -281,12 +282,16 @@ export default {
       greetingsType: true,
       //连接id
       hearId: '',
+      // 评价框的展示
+      evaluationType: false,
+      chatid: '', //用于评价的聊天id
+      searchid: '',
     }
   },
   created() {
     console.log('客户端地址栏传的ID：' + this.$route.query.id)
     this.searchid = this.$route.query.id
-    this.cutIn()
+    // this.cutIn()
   },
   watch: {
     value: function (newV, oldV) {
@@ -311,6 +316,7 @@ export default {
       })
     }
     this.info()
+    this.cutIn()
   },
   methods: {
     // 获取输入框的值
@@ -344,13 +350,21 @@ export default {
     },
     // 评价提交
     submit() {
-      let varmsg = this.data_item.Satisfaction + '##' + this.data_item.Message
-      if (this.assessId != '' && this.assessId != null) {
-        AddEvalua(this).then((res) => {
-          this.sendMsg(this.receid, this.send_id, this.receive_id, varmsg, 1, 2)
-          this.info()
-        })
-      }
+      // let varmsg = this.data_item.Satisfaction + '##' + this.data_item.Message
+
+      AddEvalua(this).then((res) => {
+        // this.sendMsg(this.receid, this.send_id, this.receive_id, varmsg, 1, 2)
+        this.sendMsg(
+          this.myinfo.sendId,
+          this.kfinfo.UserId,
+          this.kfinfo.Id,
+          1,
+          '用户已评价'
+        )
+        this.evaluationType = false
+        this.data_item.Message = ''
+        this.data_item.Satisfaction = ''
+      })
     },
     // 分配客服id
     distributionId() {
@@ -364,42 +378,36 @@ export default {
           this.kfinfo = res.data.data
           this.addcount()
         } else {
-          _this.leave()
+          _this.$dialog
+            .confirm({
+              title: '提示',
+              message: res.data.msg,
+            })
+            .then(() => {
+              _this.leave()
+            })
+            .catch(() => {
+              // on cancel
+            })
         }
         // _this.$toast('连接成功');
       })
     },
+    leaveMessage() {
+      this.$router.push({
+        name: 'leaveMessage',
+        query: {
+          id: this.myinfo.sendId,
+        },
+      })
+    },
     // 客服均不在线的时候留言操作
     leave() {
-      console.log('不在线')
-      const _this = this
-      _this.demoChatHubProxy.invoke('GetGeegtingData')
-      _this.demoChatHubProxy.on('greetingsMessageToPage', function (content) {
-        _this.sendMsg(
-          _this.receid,
-          '00000000-0000-0000-0000-000000000000',
-          _this.send_id,
-          content,
-          '2',
-          0
-        )
-        _this.$dialog
-          .confirm({
-            title: '提示',
-            message: content,
-            confirmButtonText: '留言',
-          })
-          .then(() => {
-            _this.$router.push({
-              name: 'leaveMessage',
-              query: {
-                id: _this.send_id,
-              },
-            })
-          })
-          .catch(() => {
-            // on cancel
-          })
+      this.$router.push({
+        name: 'leaveMessage',
+        query: {
+          id: this.myinfo.sendId,
+        },
       })
     },
     // 发送私聊消息的展示
@@ -432,19 +440,23 @@ export default {
     },
     // 接收私聊消息的展示上屏
     receiveShow(sendId, toId, receid, type, msg) {
-      let data = {
-        type: 'smart',
-        msg: msg,
-        State: 0,
+      if (msg != '结束会话!') {
+        let data = {
+          type: 'smart',
+          msg: msg,
+          State: 0,
+        }
+        this.guessList.push(data)
+        this.$nextTick(() => {
+          this.$refs.content_view_m.scrollTop =
+            this.$refs.content_view_m.scrollHeight
+        })
+        // if (state == 2) {
+        //   this.allotType = true
+        // }
+      } else {
+        this.artificialType = false
       }
-      this.guessList.push(data)
-      this.$nextTick(() => {
-        this.$refs.content_view_m.scrollTop =
-          this.$refs.content_view_m.scrollHeight
-      })
-      // if (state == 2) {
-      //   this.allotType = true
-      // }
     },
     // 接收图片消息的展示上屏
     receiveImgShow(sendId, toId, receid, type, msg) {
@@ -458,6 +470,21 @@ export default {
         this.$refs.content_view_m.scrollTop =
           this.$refs.content_view_m.scrollHeight
       })
+    },
+    // 接收评价消息上屏
+    evaluationShow(sendId, toId, msg, chatid) {
+      let data = {
+        type: 'smart',
+        msg: msg,
+        State: 0,
+      }
+      this.guessList.push(data)
+      this.$nextTick(() => {
+        this.$refs.content_view_m.scrollTop =
+          this.$refs.content_view_m.scrollHeight
+      })
+      this.chatid = chatid
+      this.evaluationType = true
     },
     // 发送消息 方法
     sendMsg(sendId, toId, receid, type, msg) {
@@ -828,6 +855,24 @@ export default {
           )
           // _this.assessId = assessId
           _this.receiveImgShow(sendId, toId, receid, type, msg)
+        }
+      )
+      // 接收评价消息
+      _this.demoChatHubProxy.on(
+        'remindAppraiseMsg',
+        function (sendId, toId, receid, msg) {
+          console.log(
+            '接收评价消息remindAppraiseMsg--发送发id：' +
+              sendId +
+              ',接收方id：' +
+              toId +
+              '，消息内容：' +
+              msg +
+              '，接待id：' +
+              receid
+          )
+          // _this.assessId = assessId
+          _this.evaluationShow(sendId, toId, receid, msg)
         }
       )
       //显示发送的私聊消息
